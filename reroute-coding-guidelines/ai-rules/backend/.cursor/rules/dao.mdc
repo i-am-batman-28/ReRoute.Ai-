@@ -1,0 +1,49 @@
+---
+description: "DAO — project-local BaseDAO, no commits, no exception swallowing"
+globs: ["**/dao/**/*.py", "**/*_dao.py", "**/dao.py"]
+alwaysApply: false
+---
+
+# DAOs
+
+## Rules
+
+- Each DAO class focuses on **one** entity / aggregate root.
+- Class name ends with **`DAO`** (`UserDAO`, `TripDAO`).
+- **Inherit** from your in-repo **`BaseDAO`** in `dao/base_dao.py` (recommended), which takes `(model_class, session)` in `super().__init__(Model, session)`.
+- **Never** `commit` or `rollback` in DAOs — services own the transaction boundary.
+- **Do not** wrap database calls in `try/except` — let exceptions propagate to the service layer (decorator / global handlers).
+- Prefer **SQLAlchemy 2** `select()` / `execute()` / `scalars()`. Raw SQL only when complexity warrants it.
+
+## Example (project-local BaseDAO)
+
+```python
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.dao.base_dao import BaseDAO
+from app.model.user_model import User
+
+
+class UserDAO(BaseDAO):
+    def __init__(self, session: AsyncSession):
+        super().__init__(User, session)
+
+    async def get_by_id(self, user_id: str):
+        result = await self.session.execute(select(User).where(User.id == user_id))
+        return result.scalar_one_or_none()
+```
+
+## Alternative (Saarthi-style static methods)
+
+If the team prefers **no** `BaseDAO` inheritance, use explicit `session: AsyncSession` on each method and keep the same **no commit / no try-except** rules. Still place all such access in `dao/` modules.
+
+## Naming
+
+- Methods: `get_by_id`, `list_active`, `create`, `update`, `delete_by_id` — clear verbs.
+
+## What not to do
+
+- Do not return `HTTPException` from DAOs  
+- Do not import routers or FastAPI into DAO modules  
+- Do not mix unrelated entities in one DAO class  

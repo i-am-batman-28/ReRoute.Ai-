@@ -1,0 +1,48 @@
+---
+description: "FastAPI routers — thin handlers, auth, response models"
+globs: ["**/routers/**/*.py", "**/router*.py", "**/*_router.py"]
+alwaysApply: false
+---
+
+# Routers
+
+## Required behavior
+
+- Handlers **only** call **service** functions (async). No business rules, no direct `session.execute`, no SQL in the router.
+- **No** `try/except` in route bodies — use global exception handlers + service-layer decorators.
+- Every route **must** set `response_model` (use your project’s `BaseResponse[T]` or explicit Pydantic response models).
+- Every route **must** set success `status_code` (e.g. `200`, `201`) where applicable.
+- Validate bodies and path/query params with **Pydantic** models or typed parameters.
+
+## Auth
+
+- Protected routes: `Depends(get_current_user)` or your project’s equivalent (`Annotated[User, Depends(...)]`).
+- Public routes (health, OAuth callback, etc.): document why they skip auth; keep them minimal.
+- Internal/service-to-service routes (if any): separate `APIRouter` + shared secret or signed headers — **never** expose on public URLs without protection.
+
+## Pagination query params
+
+Use **`page`** and **`page_size`** in the route signature — not `limit`/`offset`. Convert inside service or DAO:
+
+```python
+offset = (page - 1) * page_size
+```
+
+## Multi-value filters
+
+Use repeated query keys with `Query()` and **Enum** types (define in `schema/…`, not magic strings in the router).
+
+## Prefixes
+
+Define API prefix from **settings** (e.g. `settings.api_prefix`) or a constant in `api_router.py`. You do **not** need a remote service registry for a monolith.
+
+## Documentation
+
+Document endpoints in OpenAPI (FastAPI default). If the team uses Bruno/Insomnia, keep collections in sync for demo and QA.
+
+## What not to do
+
+- No DB or raw SQL in routers  
+- No swallowing exceptions  
+- No unclear abbreviated path segments (`/wa/ci/add`) — prefer readable segments  
+- For multi-tenant IDs: prefer **path** parameters (e.g. `business_id`) over hiding context only in the body  

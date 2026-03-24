@@ -1,0 +1,43 @@
+---
+description: "Service layer — exceptions, commits, internal HTTP"
+globs: ["**/service/**/*.py", "**/services/**/*.py", "**/*_service.py"]
+alwaysApply: false
+---
+
+# Service functions
+
+## Rules
+
+- Decorate public service entrypoints with your project’s **`@handle_exceptions(logger=logger)`** (implement in `utils/exceptions.py` or similar). **`logger` is required** so errors map to a module.
+- **Commits** only here: `await session.commit()` after a successful unit of work. Never commit in routers or DAOs.
+- Use **`rollback_on_exception=True`** (or equivalent) on multi-step flows where any failure must discard the whole transaction.
+- **Outbound HTTP** to other services: only from services, via **`utils/internal_http.py`** (or one shared `httpx` client) — not raw `requests` scattered across files.
+- **Helpers** used by a single service file: define **above** the service function, prefix with **`_`**, no broad `try/except` (raise domain errors or `HTTPException` for known business violations).
+
+## Example
+
+```python
+import logging
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.utils.exceptions import handle_exceptions
+from app.dao.user_dao import UserDAO
+
+logger = logging.getLogger(__name__)
+
+
+@handle_exceptions(logger=logger)
+async def create_user(payload: UserCreate, session: AsyncSession):
+    dao = UserDAO(session)
+    user = await dao.create(payload)
+    await session.commit()
+    await session.refresh(user)
+    return user
+```
+
+## What not to do
+
+- Do not skip the exception helper on non-trivial service entrypoints  
+- Do not call `httpx`/`requests` directly — use the shared internal HTTP helpers  
+- Do not place helpers **below** the functions that use them (keep file readable top-down)  

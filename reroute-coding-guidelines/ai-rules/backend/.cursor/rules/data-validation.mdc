@@ -1,0 +1,41 @@
+---
+description: "Pydantic schemas — naming, money, pagination"
+globs: ["**/schema/**/*.py", "**/schemas/**/*.py", "**/*_schemas.py"]
+alwaysApply: false
+---
+
+# Data validation
+
+## Rules
+
+- Use **Pydantic v2** models for request bodies and response models exposed by the API.
+- Query parameters: simple types + `Query()` / `Path()` as needed; pagination uses **`page`** + **`page_size`** on the router, not `limit`/`offset` in the signature.
+- Organize schemas under **`schema/`** (e.g. `trip_schemas.py`, `common_schemas.py`). Use package imports: `from app.schema import trip_schemas as trip_schemas` or `from app.schema.trip_schemas import TripCreate`.
+
+## Naming
+
+- Create: `{Entity}CreateRequest`
+- Patch / update: `{Entity}PatchRequest` or `{Entity}UpdateRequest`
+- Single response: `{Entity}Response`
+- List: `{Entity}ListResponse` or paginated wrapper in `common_schemas`
+- Detail: `{Entity}DetailResponse` when needed
+
+Request models end with **`Request`**; responses with **`Response`** (or `ListResponse` / `DetailResponse`).
+
+## Money
+
+Do **not** use `float` for money. Use **`Decimal`** from the standard library with Pydantic `Field` constraints, or `Annotated[Decimal, Field(max_digits=..., decimal_places=...)]`. Serialize consistently (string or number) in your API contract.
+
+## Enums
+
+Define in `schema/…/enums.py` or next to the feature schemas. **Import** into routers — no string enums duplicated in route signatures.
+
+## Internal vs public
+
+Validate **internal** admin or worker endpoints with the same Pydantic discipline as public routes.
+
+## What not to do
+
+- Do not skip validation “because it’s internal”  
+- Do not put large JSON blobs in query strings — use POST body or repeated keys  
+- Do not use `limit`/`offset` as public query param names if the team standard is `page`/`page_size`  

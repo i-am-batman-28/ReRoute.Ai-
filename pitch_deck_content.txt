@@ -1,0 +1,209 @@
+================================================================================
+  PITCH DECK CONTENT — TripGuard AI
+  IIIT Sri City IdeaVerse Hackathon 2026
+  Format: 6 slides (including title). Points / diagrams only. Save as PDF.
+================================================================================
+
+
+--------------------------------------------------------------------------------
+SLIDE 1 — TITLE PAGE
+--------------------------------------------------------------------------------
+
+IIIT Sri City IdeaVerse Hackathon 2026
+
+• Problem Statement Title:
+  Autonomous AI agent for managing travel disruption
+
+• Theme:
+  Travel — Intelligent & Personalized Travel Experiences
+
+• Team Name:
+  [Your team name]
+
+S.No   Name              College              Year
+1      [Name 1]          [College 1]          [Year]
+2      [Name 2]          [College 2]          [Year]
+3      [Name 3]          [College 3]          [Year]
+4      [Name 4]          [College 4]          [Year]
+5      [Leave blank or add 5th member]
+
+
+--------------------------------------------------------------------------------
+SLIDE 2 — PROPOSED SOLUTION: Concept, Approach, and Prototype
+--------------------------------------------------------------------------------
+
+TripGuard AI — "Your trip breaks. We fix it. Before you even notice."
+
+• What it is
+  - An always-on autonomous AI agent that monitors, predicts, and resolves
+    travel disruptions — so the traveller never has to
+  - Not a chatbot. Not a search tool. An AGENT that ACTS on your behalf
+
+• Core capabilities
+  - Predictive Disruption Radar: alerts BEFORE the delay is official
+    using flight data + weather + route history
+  - Plan B Ready: pre-computes backup options at trip import — when
+    disruption hits, alternatives are ready in seconds
+  - Autonomous Rebooking: finds alternatives across flights, trains,
+    buses, and combos (multi-modal) — ranked by "best for you"
+  - Ripple/Cascade Engine: one disruption → agent fixes the FULL chain
+    (rebook flight + update hotel + flag meeting conflict)
+  - Compensation Autopilot: auto-detects eligibility (DGCA/EU261),
+    generates claim, attaches expense receipts — one-tap submit
+  - Group Sync: keeps families/teams rebooked together on the same
+    alternative — no one gets split up
+  - Airport Survival Kit: while you wait — nearest lounge, food,
+    charging, Wi-Fi, rest areas
+  - Voice Panic Mode: just say "My flight got cancelled" — agent
+    responds with options by voice; confirm by saying "Yes, do it"
+
+• How it solves the problem
+  - Traveller is never stuck searching, queuing, or guessing
+  - One tap (or one voice command) to confirm → entire trip updated
+  - Cascade handled: hotel, meetings, next legs — all adjusted
+  - Money recovered: compensation + expenses claimed automatically
+  - Stress reduced: calm, context-aware communication + airport help
+
+• Innovation and distinctiveness
+  - Plan B pre-computed before any disruption (no tool does this)
+  - Multi-modal rebooking: flights + trains + combos (not flight-only)
+  - Full cascade/ripple handling (hotel + meetings + next legs)
+  - Compensation + expense tracking + proof collection in one agent
+  - Group/family sync rebooking (existing tools handle one traveller)
+  - Voice-first during disruptions (hands-free when stressed)
+  - Disruption Risk Score shown at trip import (proactive, not reactive)
+  - Smart Timing: context-aware notifications (severity × time × sleep)
+  - Personal disruption memory: learns your preferences over time
+
+
+--------------------------------------------------------------------------------
+SLIDE 3 — TECHNICAL APPROACH
+--------------------------------------------------------------------------------
+
+Technologies to be used
+  - Frontend: React (Next.js), Tailwind CSS, shadcn/ui
+  - Backend: Node.js (Express) or Python (FastAPI)
+  - AI / Agent: OpenAI GPT API with function calling (or open-source LLM)
+  - Agent framework: LangChain / custom tool-use loop
+  - Voice: Web Speech API (speech-to-text + text-to-speech)
+  - Flight data: AviationStack or FlightAware API (real-time status)
+  - Flight search: Amadeus Self-Service API (sandbox)
+  - Weather: OpenWeatherMap API (predictive delay risk)
+  - Multi-modal: Google Maps / TravelTime API (train, bus, taxi routes)
+  - Database: PostgreSQL or Firebase (trips, users, events, preferences)
+  - Real-time: WebSocket (Socket.io) for live dashboard updates
+  - Notifications: Firebase Cloud Messaging + Twilio (push, SMS, WhatsApp)
+
+Implementation methodology (agent architecture)
+  - Background job polls flight status every 5–10 min per active trip
+  - On trip import: compute Disruption Risk Score + generate Plan B
+  - On delay/cancel detection: trigger autonomous agent loop:
+      OBSERVE → flight status, weather, full trip, user prefs
+      THINK  → LLM reasons: "What's affected? What tools do I need?"
+      ACT    → call tools: search_flights, search_trains, check_hotel,
+               check_compensation, check_group_bookings
+      UPDATE → rank options, write to DB, prepare cascade adjustments
+      NOTIFY → push/voice alert with options + cascade summary
+      CONFIRM → user taps or says "yes" → agent applies all changes
+  - Flowchart:
+    [Monitor] → [Detect/Predict] → [Agent: Think + Act + Tools]
+    → [Update Trip + Cascade] → [Notify User] → [User Confirms]
+    → [Apply Changes + File Compensation]
+
+
+--------------------------------------------------------------------------------
+SLIDE 4 — FEASIBILITY AND VIABILITY
+--------------------------------------------------------------------------------
+
+Analysis of the feasibility
+  - Core flow buildable in 60 hours: trip import → risk score → Plan B
+    → status poll → disruption detect → alternative search → present
+    options → cascade handling → confirm → update itinerary
+  - Flight status + search APIs available (AviationStack, Amadeus sandbox)
+  - LLM + function calling is standard; no custom model training needed
+  - Voice via browser Web Speech API (no extra infra)
+  - Can demo with mock/sandbox APIs; no real payment or booking required
+  - Plan B + Risk Score = rule-based + API data; no heavy ML
+
+Potential challenges and risks
+  - API rate limits on free tiers during live demo
+  - Real rebooking requires airline/OTA partnerships (out of hackathon scope)
+  - Compensation rules vary by country; we support one (DGCA) for demo
+  - Voice accuracy in noisy environments
+
+Strategies for overcoming these challenges
+  - Use mock data or cached responses as fallback for demo
+  - Focus on one disruption type (cancellation) + one cascade (hotel + meeting)
+  - Implement one compensation rule (DGCA) and show full flow; extend later
+  - Voice as bonus demo; primary flow is tap-based (voice is a differentiator,
+    not a dependency)
+  - Backup: short pre-recorded video of full flow if live demo has issues
+
+
+--------------------------------------------------------------------------------
+SLIDE 5 — IMPACT AND BENEFITS
+--------------------------------------------------------------------------------
+
+Potential impact on the target audience
+  - Travellers: zero manual effort during disruptions; one-tap or
+    voice resolution; automatic compensation recovery
+  - Families / groups: no one gets split up during rebooking
+  - Airlines / OTAs: fewer call-centre calls, better passenger
+    satisfaction; can white-label TripGuard as premium feature
+  - Scale: millions of trips disrupted yearly; agent handles 24/7
+    at scale with no human intervention
+
+Benefits of the solution
+  - Social: reduces anxiety, confusion, and helplessness during
+    disruptions; fair access to compensation for all travellers
+    (not just frequent flyers who know the system)
+  - Economic: saves traveller time and recovers money (compensation
+    + expenses); reduces airline support cost by up to 40%
+  - Environmental: multi-modal rebooking (train/bus options) can
+    reduce unnecessary short-haul flights; promotes sustainable
+    travel alternatives
+  - Accessibility: voice-first mode helps users who are stressed,
+    elderly, or less tech-savvy; multi-language support planned
+
+
+--------------------------------------------------------------------------------
+SLIDE 6 — RESEARCH AND REFERENCES
+--------------------------------------------------------------------------------
+
+Details / Links of the reference and research work
+
+  - Problem statement: IdeaVerse'26 — Autonomous AI agent for
+    managing travel disruption (Travel theme)
+  - Amadeus for Developers: https://developers.amadeus.com
+    (flight search, delay prediction API)
+  - AviationStack: https://aviationstack.com
+    (real-time flight status tracking)
+  - Sabre IQ / Sabre Mosaic: AI-first agentic travel platform
+    (industry trend, launched ITB Berlin 2026)
+  - Hopper HTS Disruption Assistance: existing disruption
+    rebooking service (competitive reference)
+  - PathPilot: autonomous AI travel agent (competitive reference)
+  - Flighty / FlightForecasts: delay prediction + alert apps
+  - AirHelp: flight compensation claim automation (EU261)
+  - DGCA CAR (India): passenger rights for flight delays/cancellations
+  - EU Regulation EC 261/2004: passenger compensation rules
+  - TraveLLM (arXiv 2407.14926): LLM-based disruption-aware
+    transit routing (research context)
+  - RecoverAI: multi-agent flight disruption management
+    (Medium, Feb 2025 — agentic architecture reference)
+
+
+================================================================================
+  END OF PITCH DECK CONTENT
+================================================================================
+
+NOTES:
+- Keep each slide to bullet points / short lines. No long paragraphs.
+- Use diagrams or a simple flowchart on Slide 3 (agent architecture).
+- Replace [Your team name] and table rows with actual team details.
+- Save final deck as PDF before uploading to UnStop.
+- For the demo / prototype slides, consider adding:
+  → Screenshot of Trip Dashboard (one screen: flight + hotel + meeting + compensation)
+  → Screenshot of disruption alert with options
+  → Screenshot of cascade handling ("We've also updated...")
+  → Agent architecture diagram (Observe → Think → Act → Notify → Confirm)

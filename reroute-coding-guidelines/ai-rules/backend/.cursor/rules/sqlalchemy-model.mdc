@@ -1,0 +1,37 @@
+---
+description: "SQLAlchemy models — single DeclarativeBase in-repo"
+globs: ["**/model/**/*.py", "**/models/**/*.py", "**/*_model.py"]
+alwaysApply: false
+---
+
+# SQLAlchemy models
+
+## Rules
+
+- All ORM models inherit from **one** project **`Base`** class (`DeclarativeBase` subclass), e.g. `from app.model.base import Base` or `from app.database import Base`.
+- **Never** mix multiple unrelated declarative bases.
+- Table names explicit: `__tablename__ = "..."`  
+- Use SQLAlchemy 2 style **`Mapped[]`** and **`mapped_column()`** where the project already does; otherwise consistent 1.x/2.x style per repo.
+
+## Example
+
+```python
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import String
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True)
+```
+
+## What not to do
+
+- Do not import OmniSage `ModelBase` — use your repo’s `Base` only  
+- Do not put API / Pydantic types on ORM classes as the public contract  

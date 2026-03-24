@@ -1,0 +1,110 @@
+================================================================================
+  ReRoute.AI — 3-way feature split → files each teammate owns
+  Paths relative to reroute-ai/ unless noted.
+================================================================================
+
+FEATURE SPLIT (reminder)
+------------------------
+  1) AI & agent
+  2) Trip, disruption & external data
+  3) Product surface & outcomes (auth, UI, apply/cascade)
+
+
+--------------------------------------------------------------------------------
+TEAMMATE 1 — AI & AGENT
+--------------------------------------------------------------------------------
+
+  backend/agent/          (all: actions.py, graph_runner.py, policy.py,
+                           state.py, tools.py, __init__.py)
+  backend/service/agent_service.py
+  backend/routers/agent_router.py
+  backend/schema/agent_schemas.py
+  docs/AGENT_ARCHITECTURE.md
+  backend/tests/test_agent.py
+
+
+--------------------------------------------------------------------------------
+TEAMMATE 2 — TRIP, DISRUPTION, EXTERNAL DATA
+--------------------------------------------------------------------------------
+
+  backend/model/base.py
+  backend/model/trip_model.py
+  backend/model/leg_model.py
+  backend/model/disruption_event_model.py
+  backend/model/proposal_model.py
+  backend/model/itinerary_segment_model.py
+  backend/model/__init__.py
+
+  backend/dao/base_dao.py
+  backend/dao/trip_dao.py
+  backend/dao/leg_dao.py
+  backend/dao/disruption_event_dao.py
+  backend/dao/proposal_dao.py
+
+  backend/integrations/   (all, including protocols.py)
+
+  backend/service/trip_service.py
+  backend/service/disruption_service.py
+  backend/service/monitor_service.py
+
+  backend/schema/trip_schemas.py
+  backend/schema/disruption_schemas.py
+
+  backend/routers/trip_router.py
+  backend/routers/disruption_router.py
+  backend/routers/monitor_router.py
+
+  backend/database.py     (engine/session/init_db — coordinate with T3 on auth)
+
+
+--------------------------------------------------------------------------------
+TEAMMATE 3 — PRODUCT SURFACE & OUTCOMES
+--------------------------------------------------------------------------------
+
+  frontend/               (entire Next.js app)
+
+  backend/model/user_model.py
+  backend/dao/user_dao.py
+  backend/service/user_service.py
+  backend/service/itinerary_service.py
+
+  backend/routers/user_router.py
+  backend/routers/health_router.py
+
+  backend/schema/user_schemas.py
+  backend/schema/itinerary_schemas.py
+
+  backend/deps.py         (get_db, get_current_user)
+
+  backend/tests/test_user.py
+  backend/tests/test_health.py
+
+
+--------------------------------------------------------------------------------
+SHARED — COORDINATE (small PRs, announce in chat)
+--------------------------------------------------------------------------------
+
+  backend/api_router.py
+  backend/main.py
+  backend/config.py
+  backend/schema/common_schemas.py
+  backend/pyproject.toml
+  backend/tests/conftest.py
+  README.md
+  backend/README.md
+  .env.example
+  .gitignore
+
+
+--------------------------------------------------------------------------------
+CROSS-CUTTING AGREEMENTS
+--------------------------------------------------------------------------------
+
+  • T2 owns trip/disruption DB shape; T1 reads it via tools; T3 displays it and
+    runs post-confirm updates in itinerary_service.
+  • itinerary_segment_model: T2 owns schema/migrations; T3 owns when rows are
+    updated in itinerary_service.
+
+================================================================================
+  END
+================================================================================

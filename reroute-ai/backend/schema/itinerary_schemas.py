@@ -1,0 +1,3 @@
+"""API schemas: hotels, meetings, cascade updates."""
+
+# TODO: HotelSegmentResponse, MeetingSegmentResponse, CascadePreviewResponse, ...

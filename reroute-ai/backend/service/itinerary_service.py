@@ -1,0 +1,3 @@
+"""Business logic: apply itinerary changes after user confirm (cascade)."""
+
+# TODO: apply_rebooking_plan, notify_segments, ...

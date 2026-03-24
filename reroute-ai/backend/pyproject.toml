@@ -12,6 +12,11 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic-settings>=2.6.0",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "aiosqlite>=0.20.0",
+    "bcrypt>=4.0.0",
+    "PyJWT>=2.8.0",
+    "email-validator>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -30,7 +35,7 @@ dev = [
 ]
 
 [tool.setuptools]
-py-modules = ["main", "config", "api_router", "deps"]
+py-modules = ["main", "config", "api_router", "deps", "database"]
 
 [tool.setuptools.packages.find]
 include = ["routers", "service", "dao", "schema", "model", "integrations", "agent", "utils"]

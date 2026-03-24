@@ -1,0 +1,3 @@
+"""Data access: disruption events."""
+
+# TODO: class DisruptionEventDAO(BaseDAO): ...

@@ -1,0 +1,3 @@
+"""Business logic: disruption detection and events."""
+
+# TODO: record_event, list_events_for_trip, ...

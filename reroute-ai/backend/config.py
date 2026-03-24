@@ -9,6 +9,13 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     cors_origins: str = "http://localhost:3000"
 
+    database_url: str = "sqlite+aiosqlite:///./reroute.db"
+    debug_sql: bool = False
+
+    jwt_secret_key: str = "change-me-use-long-random-string-in-production"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

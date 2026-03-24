@@ -1,0 +1,3 @@
+"""ORM: detected or predicted disruption events (audit log)."""
+
+# TODO: class DisruptionEvent(Base): ...

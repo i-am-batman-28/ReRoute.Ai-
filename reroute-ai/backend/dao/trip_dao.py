@@ -1,0 +1,3 @@
+"""Data access: trips."""
+
+# TODO: class TripDAO(BaseDAO): ...

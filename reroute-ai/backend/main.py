@@ -6,11 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api_router import api_router
 from config import get_settings
+from database import dispose_engine, init_db
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    await init_db()
     yield
+    await dispose_engine()
 
 
 def create_app() -> FastAPI:

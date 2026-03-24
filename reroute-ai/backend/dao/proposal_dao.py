@@ -1,0 +1,3 @@
+"""Data access: rebooking proposals."""
+
+# TODO: class ProposalDAO(BaseDAO): ...

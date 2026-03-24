@@ -1,6 +1,7 @@
 .env
 .env.local
 backend/.venv/
+backend/reroute.db
 backend/**/__pycache__/
 *.pyc
 .pytest_cache/

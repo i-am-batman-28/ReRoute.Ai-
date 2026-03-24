@@ -1,0 +1,3 @@
+"""ORM: non-flight segments (hotel, meeting) for cascade."""
+
+# TODO: class ItinerarySegment(Base): ...

@@ -1,0 +1,3 @@
+"""Business logic: background polling / status monitor."""
+
+# TODO: tick_monitor, evaluate_trip_risk, ...

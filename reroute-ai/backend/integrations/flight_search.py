@@ -1,0 +1,3 @@
+"""Flight search client (Amadeus sandbox / mock)."""
+
+# TODO: class FlightSearchClientImpl: ...

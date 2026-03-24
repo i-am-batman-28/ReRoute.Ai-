@@ -1,0 +1,3 @@
+"""API schemas: trips and legs."""
+
+# TODO: TripCreateRequest, TripResponse, TripListResponse, ...

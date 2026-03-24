@@ -1,0 +1,3 @@
+"""Flight status client (AviationStack / mock)."""
+
+# TODO: class FlightStatusClientImpl: ...

@@ -1,0 +1,3 @@
+"""Business logic: trips."""
+
+# TODO: create_trip, get_trip, list_trips, ...

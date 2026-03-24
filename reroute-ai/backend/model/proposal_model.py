@@ -1,0 +1,3 @@
+"""ORM: agent rebooking proposal (awaiting user confirm)."""
+
+# TODO: class RebookingProposal(Base): ...

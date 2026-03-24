@@ -1,0 +1,3 @@
+"""API schemas: disruption events and monitor payloads."""
+
+# TODO: DisruptionEventResponse, MonitorStatusResponse, ...

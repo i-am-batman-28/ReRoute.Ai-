@@ -1,4 +1,5 @@
 .DS_Store
+.env
 Signals.SaarthiAi/
 workbench/
 coding-guidelines/

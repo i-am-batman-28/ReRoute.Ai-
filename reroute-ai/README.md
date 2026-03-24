@@ -20,6 +20,8 @@ npm run dev
 
 API health: `GET http://localhost:8000/api/health`
 
+Agent (stubs): `POST /api/agent/propose`, `POST /api/agent/confirm` — see [docs/AGENT_ARCHITECTURE.md](docs/AGENT_ARCHITECTURE.md).
+
 ## Guidelines
 
 See `../reroute-coding-guidelines/` for Cursor rules and architecture docs.

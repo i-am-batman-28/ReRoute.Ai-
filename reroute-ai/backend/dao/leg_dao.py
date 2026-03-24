@@ -1,0 +1,3 @@
+"""Data access: trip legs."""
+
+# TODO: class LegDAO(BaseDAO): ...

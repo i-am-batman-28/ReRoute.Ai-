@@ -1,3 +1,32 @@
-"""Weather client (Open-Meteo / mock)."""
+"""Weather client (Open-Meteo)."""
 
-# TODO: fetch_airport_weather(...)
+from __future__ import annotations
+
+import httpx
+
+
+async def fetch_openmeteo_hourly(*, latitude: float, longitude: float) -> dict:
+    """
+    Fetch minimal hourly weather signals used for disruption risk:
+    - precipitation_probability
+    - weather_code
+    - wind_speed_10m
+    """
+    url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "timezone": "UTC",
+        "hourly": ",".join(
+            [
+                "precipitation_probability",
+                "weather_code",
+                "wind_speed_10m",
+            ]
+        ),
+    }
+    async with httpx.AsyncClient(timeout=20) as client:
+        r = await client.get(url, params=params)
+        r.raise_for_status()
+        return r.json()
+

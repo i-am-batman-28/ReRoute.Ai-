@@ -20,6 +20,7 @@ class RankedOptionDTO(BaseModel):
     score: float
     summary: str
     legs: list[dict[str, Any]] = Field(default_factory=list)
+    modality: str = "flight"
 
 
 class AgentProposeResponse(BaseModel):
@@ -27,6 +28,9 @@ class AgentProposeResponse(BaseModel):
     phase: str
     ranked_options: list[RankedOptionDTO] = Field(default_factory=list)
     tool_trace_summary: list[str] = Field(default_factory=list)
+    cascade_preview: dict[str, Any] | None = None
+    compensation_draft: dict[str, Any] | None = None
+    notification_status: dict[str, Any] | None = None
 
 
 class AgentConfirmRequest(BaseModel):
@@ -38,3 +42,5 @@ class AgentConfirmResponse(BaseModel):
     applied: bool
     itinerary_revision: int | None = None
     message: str
+    duffel_order_id: str | None = None
+    email_sent: bool | None = None

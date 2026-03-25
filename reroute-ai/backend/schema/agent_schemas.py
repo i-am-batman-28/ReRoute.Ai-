@@ -15,7 +15,17 @@ class AgentProposeRequest(BaseModel):
     )
     async_mode: bool = Field(
         False,
-        description="If true, enqueue Celery job and poll GET .../propose/jobs/{task_id} (requires Redis).",
+        description="If true, enqueue Celery job and poll GET .../propose/jobs/{task_id} (requires Redis). Prefer POST .../propose/async to avoid opening a DB session.",
+    )
+
+
+class AgentProposeAsyncRequest(BaseModel):
+    """Same as sync propose body; used by POST /agent/propose/async (no DB session dependency)."""
+
+    trip_id: str = Field(..., description="Trip to analyze")
+    simulate_disruption: str | None = Field(
+        None,
+        description="Optional demo flag e.g. cancel|delay to drive mock integrations",
     )
 
 

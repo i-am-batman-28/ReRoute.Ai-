@@ -26,7 +26,7 @@ def enqueue_monitor_cycle() -> dict:
     return {"ok": True, "detail": "stub — wire trip scans and agent checks here"}
 
 
-@celery_app.task(name="reroute.email.send_resend_html")
+@celery_app.task(name="reroute.email.send_resend_html", ignore_result=True)
 def send_resend_html_email(*, to_email: str, subject: str, html: str) -> dict:
     """Send HTML email via Resend (sync httpx — runs in worker)."""
     from integrations.resend_sync import send_email_html_sync

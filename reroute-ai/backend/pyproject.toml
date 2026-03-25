@@ -19,6 +19,8 @@ dependencies = [
     "PyJWT>=2.8.0",
     "httpx>=0.27.0",
     "email-validator>=2.0.0",
+    "celery[redis]>=5.4.0",
+    "redis>=5.0.0",
 ]
 
 [project.optional-dependencies]
@@ -36,7 +38,7 @@ dev = [
 py-modules = ["main", "config", "api_router", "deps", "database"]
 
 [tool.setuptools.packages.find]
-include = ["routers", "service", "dao", "schema", "model", "integrations", "agent", "utils"]
+include = ["routers", "service", "dao", "schema", "model", "integrations", "agent", "utils", "worker"]
 
 [tool.ruff]
 target-version = "py311"

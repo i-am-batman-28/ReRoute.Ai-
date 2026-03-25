@@ -11,6 +11,7 @@ This implements the production-grade behavior you requested:
 
 from __future__ import annotations
 
+import copy
 import logging
 import uuid
 
@@ -306,12 +307,12 @@ async def confirm_and_apply(
         extra={"proposal_id": body.proposal_id, "option": body.selected_option_id},
     )
 
-    proposal = await proposal_service.fetch_proposal_context(
+    row = await proposal_service.get_proposal_row(
         session=session,
         proposal_id=body.proposal_id,
         user_id=user_id,
     )
-    if not proposal:
+    if not row:
         return AgentConfirmResponse(
             applied=False,
             itinerary_revision=None,
@@ -320,6 +321,30 @@ async def confirm_and_apply(
             email_sent=False,
         )
 
+    if row.status == "applied":
+        if row.selected_offer_id == body.selected_option_id:
+            trip_ctx = (row.context or {}).get("trip_context") or {}
+            tid = trip_ctx.get("trip_id")
+            itinerary_revision: int | None = None
+            if isinstance(tid, str) and tid:
+                trip_pub = await trip_service.get_trip(user_id=user_id, trip_id=tid, session=session)
+                itinerary_revision = trip_pub.itinerary_revision
+            return AgentConfirmResponse(
+                applied=True,
+                itinerary_revision=itinerary_revision if itinerary_revision is not None else 1,
+                message="Rebooking was already applied for this option (idempotent replay).",
+                duffel_order_id=row.duffel_order_id,
+                email_sent=False,
+            )
+        return AgentConfirmResponse(
+            applied=False,
+            itinerary_revision=None,
+            message="This proposal was already applied with a different option.",
+            duffel_order_id=row.duffel_order_id,
+            email_sent=False,
+        )
+
+    proposal = copy.deepcopy(row.context)
     trip_context = proposal["trip_context"]
     booking_mode = proposal.get("booking_mode", "live")
     options_by_offer_id = proposal.get("options_by_offer_id") or {}

@@ -8,6 +8,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from dao.disruption_event_dao import DisruptionEventDAO
 from dao.proposal_dao import ProposalDAO
+from model.proposal_model import RebookingProposal
+
+
+async def get_proposal_row(
+    *,
+    session: AsyncSession,
+    proposal_id: str,
+    user_id: str,
+) -> RebookingProposal | None:
+    return await ProposalDAO(session).get_by_id_for_user(proposal_id=proposal_id, user_id=user_id)
 
 
 async def persist_new_proposal(
@@ -66,6 +76,8 @@ async def mark_proposal_applied(
     edao = DisruptionEventDAO(session)
     row = await pdao.get_by_id_for_user(proposal_id=proposal_id, user_id=user_id)
     if not row:
+        return False
+    if row.status != "pending":
         return False
     await pdao.mark_applied(
         row,

@@ -20,6 +20,7 @@ async def persist_new_proposal(
     disruption_type: str,
     tool_trace_summary: list[str],
     ranked_option_ids: list[str],
+    commit: bool = True,
 ) -> None:
     pdao = ProposalDAO(session)
     edao = DisruptionEventDAO(session)
@@ -35,7 +36,8 @@ async def persist_new_proposal(
             "ranked_option_ids": ranked_option_ids,
         },
     )
-    await session.commit()
+    if commit:
+        await session.commit()
 
 
 async def fetch_proposal_context(
@@ -58,6 +60,7 @@ async def mark_proposal_applied(
     disruption_type: str | None,
     selected_offer_id: str,
     duffel_order_id: str | None,
+    commit: bool = True,
 ) -> bool:
     pdao = ProposalDAO(session)
     edao = DisruptionEventDAO(session)
@@ -80,5 +83,6 @@ async def mark_proposal_applied(
             "duffel_order_id": duffel_order_id,
         },
     )
-    await session.commit()
+    if commit:
+        await session.commit()
     return True

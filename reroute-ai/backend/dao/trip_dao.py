@@ -28,10 +28,11 @@ class TripDAO(BaseDAO):
         result = await self.session.execute(q)
         return int(result.scalar_one() or 0)
 
-    async def list_for_user(self, *, user_id: str) -> list[Trip]:
-        result = await self.session.execute(
-            select(Trip).where(Trip.user_id == user_id).order_by(Trip.created_at.desc())
-        )
+    async def list_for_user(self, *, user_id: str, limit: int | None = None) -> list[Trip]:
+        q = select(Trip).where(Trip.user_id == user_id).order_by(Trip.created_at.desc())
+        if limit is not None:
+            q = q.limit(limit)
+        result = await self.session.execute(q)
         return list(result.scalars().all())
 
     async def create(

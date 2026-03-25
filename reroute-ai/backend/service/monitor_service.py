@@ -14,7 +14,6 @@ from schema.monitor_schemas import MonitorStatusResponse, MonitorTripSummary
 
 logger = logging.getLogger(__name__)
 
-# Avoid huge payloads if a user has many trips
 _MAX_TRIPS_IN_STATUS = 50
 
 
@@ -24,14 +23,16 @@ async def build_status(*, session: AsyncSession, user_id: str) -> MonitorStatusR
     ev_dao = DisruptionEventDAO(session)
 
     total_trip_count = await trip_dao.count_for_user(user_id=user_id)
-    trips = await trip_dao.list_for_user(user_id=user_id)
-    trips = trips[:_MAX_TRIPS_IN_STATUS]
+    trips = await trip_dao.list_for_user(user_id=user_id, limit=_MAX_TRIPS_IN_STATUS)
+    trip_ids = [t.id for t in trips]
     total_pending = await prop_dao.count_pending_for_user(user_id=user_id)
+    pending_by_trip = await prop_dao.count_pending_grouped_by_trips(user_id=user_id, trip_ids=trip_ids)
+    latest_by_trip = await ev_dao.latest_per_trip_for_user(user_id=user_id, trip_ids=trip_ids)
 
     summaries: list[MonitorTripSummary] = []
     for t in trips:
-        pending_trip = await prop_dao.count_pending_for_trip(trip_id=t.id, user_id=user_id)
-        latest = await ev_dao.latest_for_trip_user(trip_id=t.id, user_id=user_id)
+        pending_trip = pending_by_trip.get(t.id, 0)
+        latest = latest_by_trip.get(t.id)
         summaries.append(
             MonitorTripSummary(
                 trip_id=t.id,
@@ -43,7 +44,7 @@ async def build_status(*, session: AsyncSession, user_id: str) -> MonitorStatusR
             )
         )
 
-    now = datetime.datetime.now(datetime.UTC)
+    now = datetime.datetime.now(datetime.timezone.utc)
     logger.info(
         "monitor_status",
         extra={"user_id": user_id, "trip_count": total_trip_count, "trips_shown": len(summaries)},

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dao.base_dao import BaseDAO
@@ -63,3 +63,34 @@ class DisruptionEventDAO(BaseDAO):
             .limit(1)
         )
         return result.scalar_one_or_none()
+
+    async def latest_per_trip_for_user(
+        self, *, user_id: str, trip_ids: list[str]
+    ) -> dict[str, DisruptionEvent | None]:
+        """One query: latest event per trip_id (for monitor dashboard)."""
+        if not trip_ids:
+            return {}
+        mx = (
+            select(
+                DisruptionEvent.trip_id.label("tid"),
+                func.max(DisruptionEvent.created_at).label("mx_at"),
+            )
+            .where(
+                DisruptionEvent.user_id == user_id,
+                DisruptionEvent.trip_id.in_(trip_ids),
+            )
+            .group_by(DisruptionEvent.trip_id)
+        ).subquery()
+
+        stmt = select(DisruptionEvent).join(
+            mx,
+            (DisruptionEvent.trip_id == mx.c.tid)
+            & (DisruptionEvent.created_at == mx.c.mx_at)
+            & (DisruptionEvent.user_id == user_id),
+        )
+        result = await self.session.execute(stmt)
+        rows = list(result.scalars().all())
+        out: dict[str, DisruptionEvent | None] = {tid: None for tid in trip_ids}
+        for ev in rows:
+            out[ev.trip_id] = ev
+        return out

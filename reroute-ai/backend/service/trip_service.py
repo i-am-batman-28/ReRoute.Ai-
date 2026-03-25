@@ -113,6 +113,7 @@ async def merge_applied_rebooking_to_snapshot(
     selected_offer_id: str,
     duffel_order_id: str | None,
     arrival_time: str | None,
+    commit: bool = True,
 ) -> None:
     dao = TripDAO(session)
     trip = await dao.get_by_id_for_user(trip_id=trip_id, user_id=user_id)
@@ -126,7 +127,8 @@ async def merge_applied_rebooking_to_snapshot(
     }
     await dao.update(trip, snapshot=snap)
     await replace_derivatives_from_snapshot(session=session, trip_id=trip_id, snapshot=snap)
-    await session.commit()
+    if commit:
+        await session.commit()
     logger.info("trip_snapshot_applied_rebooking", extra={"trip_id": trip_id, "user_id": user_id})
 
 
@@ -182,10 +184,19 @@ async def delete_trip(*, user_id: str, trip_id: str, session: AsyncSession) -> N
     logger.info("trip_deleted", extra={"trip_id": trip_id, "user_id": user_id})
 
 
-async def bump_itinerary_revision(*, user_id: str, trip_id: str, session: AsyncSession) -> None:
+async def bump_itinerary_revision(
+    *,
+    user_id: str,
+    trip_id: str,
+    session: AsyncSession,
+    commit: bool = True,
+) -> int | None:
     dao = TripDAO(session)
     trip = await dao.get_by_id_for_user(trip_id=trip_id, user_id=user_id)
     if not trip:
-        return
+        return None
     await dao.bump_itinerary_revision(trip)
-    await session.commit()
+    new_rev = int(trip.itinerary_revision)
+    if commit:
+        await session.commit()
+    return new_rev

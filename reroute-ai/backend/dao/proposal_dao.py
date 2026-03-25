@@ -60,6 +60,26 @@ class ProposalDAO(BaseDAO):
         result = await self.session.execute(q)
         return int(result.scalar_one() or 0)
 
+    async def count_pending_grouped_by_trips(
+        self, *, user_id: str, trip_ids: list[str]
+    ) -> dict[str, int]:
+        if not trip_ids:
+            return {}
+        stmt = (
+            select(RebookingProposal.trip_id, func.count())
+            .where(
+                RebookingProposal.user_id == user_id,
+                RebookingProposal.trip_id.in_(trip_ids),
+                RebookingProposal.status == "pending",
+            )
+            .group_by(RebookingProposal.trip_id)
+        )
+        result = await self.session.execute(stmt)
+        counts = {tid: 0 for tid in trip_ids}
+        for trip_id, cnt in result.all():
+            counts[str(trip_id)] = int(cnt)
+        return counts
+
     async def mark_applied(
         self,
         row: RebookingProposal,

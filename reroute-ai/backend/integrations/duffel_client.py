@@ -87,8 +87,10 @@ async def get_offer_latest(*, offer_id: str) -> dict:
 
 async def create_order(*, order_payload: dict) -> dict:
     """
-    Create an order using POST /air/orders.
-    order_payload should be the full Duffel JSON body (without outer wrapper).
+    POST /air/orders.
+
+    `order_payload` is the JSON body sent to Duffel, including the top-level `data` key,
+    e.g. ``{"data": {"selected_offers": [...], "payments": [...], "passengers": [...]}}``.
     """
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(

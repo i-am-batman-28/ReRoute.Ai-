@@ -48,8 +48,15 @@ async def propose_for_trip(
         user_id=user_id, trip_id=trip_id, session=session
     )
 
+    legs_block = trip_context.get("legs") if isinstance(trip_context.get("legs"), dict) else {}
+    primary = legs_block.get("primary_flight")
+    if not isinstance(primary, dict) or not primary.get("flight_number") or not primary.get("date"):
+        raise HTTPException(
+            status_code=http_status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Trip snapshot legs.primary_flight is missing required fields",
+        )
+
     # 1) OBSERVE
-    primary = trip_context["legs"]["primary_flight"]
     try:
         flight_status = await fetch_flight_status(
             flight_number=primary["flight_number"],
@@ -59,13 +66,16 @@ async def propose_for_trip(
     except Exception as e:
         flight_status = {"status": "unknown", "delay_minutes": None, "source": f"error:{type(e).__name__}"}
 
-    try:
-        weather = await fetch_weather_signals(
-            latitude=trip_context["legs"]["weather"]["destination_lat"],
-            longitude=trip_context["legs"]["weather"]["destination_lon"],
-        )
-    except Exception:
-        weather = {"source": "error", "latest": {}}
+    wx = legs_block.get("weather") if isinstance(legs_block.get("weather"), dict) else {}
+    dest_lat = wx.get("destination_lat")
+    dest_lon = wx.get("destination_lon")
+    if dest_lat is not None and dest_lon is not None:
+        try:
+            weather = await fetch_weather_signals(latitude=float(dest_lat), longitude=float(dest_lon))
+        except Exception:
+            weather = {"source": "error", "latest": {}}
+    else:
+        weather = {"source": "skipped_missing_coords", "latest": {}}
 
     # 2) SEARCH alternatives (tools → JSON truth)
     try:
@@ -173,14 +183,16 @@ async def propose_for_trip(
             )
         )
 
-    # 5) Cascade preview (connection/hotel/meeting)
-    conn_buffer = trip_context["legs"]["connection"]["departure_after_arrival_minutes"]
+    # 5) Cascade preview (connection/hotel/meeting) — safe defaults if snapshot omits blocks
+    conn_sub = legs_block.get("connection") if isinstance(legs_block.get("connection"), dict) else {}
+    conn_buffer = int(conn_sub.get("departure_after_arrival_minutes") or 90)
     missed_connection = (disruption_status in ("delayed", "diverted")) and int(delay_minutes) >= int(
         conn_buffer
     )
     hotel_shift = int(delay_minutes)
 
-    meeting_scheduled = trip_context["legs"]["meeting"]["scheduled_time_utc"]
+    meet_sub = legs_block.get("meeting") if isinstance(legs_block.get("meeting"), dict) else {}
+    meeting_scheduled = meet_sub.get("scheduled_time_utc") or "TBD"
     meeting_message = (
         f"Meeting likely delayed by ~{hotel_shift} minutes. "
         f"Consider rescheduling (draft) from {meeting_scheduled}."
@@ -214,8 +226,16 @@ async def propose_for_trip(
             "delay_minutes": delay_minutes,
             "disruption_type": disruption_type,
         },
-        "claim_text_draft": "Based on eligibility criteria, you may be entitled to compensation. Review official rules for final determination.",
-        "evidence_checklist": ["flight status record", "rebooking receipts", "incident notes", "bank details if submitting"],
+        "claim_text_draft": (
+            "Based on eligibility criteria, you may be entitled to compensation. "
+            "Review official rules for final determination."
+        ),
+        "evidence_checklist": [
+            "flight status record",
+            "rebooking receipts",
+            "incident notes",
+            "bank details if submitting",
+        ],
     }
 
     # 7) Persist proposal context for confirm/apply
@@ -245,7 +265,9 @@ async def propose_for_trip(
         disruption_type=disruption_type,
         tool_trace_summary=tool_trace_summary,
         ranked_option_ids=[o.option_id for o in options],
+        commit=False,
     )
+    await session.commit()
 
     # 8) Notifications (in-app via response + email via Resend)
     notification_status: dict[str, object] = {"email_sent": False, "channel": ["in-app"]}
@@ -359,23 +381,35 @@ async def confirm_and_apply(
             logger.exception("Duffel order creation failed; falling back to mock.", extra={"error": str(e)})
             duffel_order_id = f"mock_order_{body.selected_option_id}"
 
-    # Simulate itinerary apply (hotel/meeting cascade)
     apply_res = await apply_rebooking_plan(trip_context=trip_context, option=option_ctx)
-    itinerary_revision = apply_res.get("itinerary_revision")
     arrival_raw = apply_res.get("arrival_time") or option_ctx.get("arrival_time")
     arrival_s = str(arrival_raw) if arrival_raw else None
 
     tid = trip_context.get("trip_id")
+    itinerary_revision: int | None = None
+
     if isinstance(tid, str) and tid:
-        await trip_service.bump_itinerary_revision(user_id=user_id, trip_id=tid, session=session)
-    await proposal_service.mark_proposal_applied(
+        await trip_service.bump_itinerary_revision(
+            user_id=user_id, trip_id=tid, session=session, commit=False
+        )
+    marked = await proposal_service.mark_proposal_applied(
         session=session,
         proposal_id=body.proposal_id,
         user_id=user_id,
         disruption_type=proposal.get("disruption_type"),
         selected_offer_id=body.selected_option_id,
         duffel_order_id=duffel_order_id,
+        commit=False,
     )
+    if not marked:
+        await session.rollback()
+        return AgentConfirmResponse(
+            applied=False,
+            itinerary_revision=None,
+            message="Could not finalize rebooking (proposal may have expired).",
+            duffel_order_id=duffel_order_id,
+            email_sent=False,
+        )
     if isinstance(tid, str) and tid:
         await trip_service.merge_applied_rebooking_to_snapshot(
             user_id=user_id,
@@ -384,7 +418,13 @@ async def confirm_and_apply(
             selected_offer_id=body.selected_option_id,
             duffel_order_id=duffel_order_id,
             arrival_time=arrival_s,
+            commit=False,
         )
+    await session.commit()
+
+    if isinstance(tid, str) and tid:
+        trip_pub = await trip_service.get_trip(user_id=user_id, trip_id=tid, session=session)
+        itinerary_revision = trip_pub.itinerary_revision
 
     # Email notification
     if to_email:
@@ -400,7 +440,7 @@ async def confirm_and_apply(
 
     return AgentConfirmResponse(
         applied=True,
-        itinerary_revision=itinerary_revision or 1,
+        itinerary_revision=itinerary_revision if itinerary_revision is not None else 1,
         message=f"Rebooking applied (order_id={duffel_order_id}).",
         duffel_order_id=duffel_order_id,
         email_sent=email_sent,

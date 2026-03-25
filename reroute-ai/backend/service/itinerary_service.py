@@ -13,7 +13,6 @@ async def apply_rebooking_plan(*, trip_context: dict[str, Any], option: dict[str
     Simulate itinerary mutation and return fields merged into trip.snapshot by the agent.
     """
     return {
-        "itinerary_revision": 1,
         "applied_message": "Itinerary updated (simulated).",
         "selected_offer_id": option.get("duffel_offer_id"),
         "arrival_time": option.get("arrival_time"),

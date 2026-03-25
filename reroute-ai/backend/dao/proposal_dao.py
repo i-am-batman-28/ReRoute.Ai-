@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import datetime
+
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -107,6 +109,20 @@ class ProposalDAO(BaseDAO):
         )
         await self.session.execute(stmt)
         await self.session.flush()
+
+    async def revert_stale_applying(self, *, older_than_minutes: int) -> int:
+        cutoff = datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=older_than_minutes)
+        stmt = (
+            update(RebookingProposal)
+            .where(
+                RebookingProposal.status == "applying",
+                RebookingProposal.updated_at < cutoff,
+            )
+            .values(status="pending")
+        )
+        res = await self.session.execute(stmt)
+        await self.session.flush()
+        return int(res.rowcount or 0)
 
     async def mark_applied(
         self,

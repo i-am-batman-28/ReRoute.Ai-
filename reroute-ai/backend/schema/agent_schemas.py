@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -12,6 +12,10 @@ class AgentProposeRequest(BaseModel):
     simulate_disruption: str | None = Field(
         None,
         description="Optional demo flag e.g. cancel|delay to drive mock integrations",
+    )
+    async_mode: bool = Field(
+        False,
+        description="If true, enqueue Celery job and poll GET .../propose/jobs/{task_id} (requires Redis).",
     )
 
 
@@ -44,3 +48,20 @@ class AgentConfirmResponse(BaseModel):
     message: str
     duffel_order_id: str | None = None
     email_sent: bool | None = None
+    email_queued: bool | None = Field(
+        None,
+        description="True when delivery was handed off to Celery (email_via_celery).",
+    )
+
+
+class AgentProposeJobAccepted(BaseModel):
+    task_id: str
+    state: Literal["queued"] = "queued"
+    poll_path: str
+
+
+class AgentProposeJobStatus(BaseModel):
+    task_id: str
+    state: str
+    result: AgentProposeResponse | None = None
+    error: str | None = None

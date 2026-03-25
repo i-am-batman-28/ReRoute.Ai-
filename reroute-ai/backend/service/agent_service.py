@@ -21,6 +21,7 @@ from fastapi import status as http_status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent.tools import fetch_flight_status, fetch_weather_signals, search_alternatives
+from config import get_settings
 from integrations.duffel_client import create_order
 from integrations.resend_client import send_email_html
 from model.proposal_model import RebookingProposal
@@ -34,6 +35,15 @@ from service import proposal_service, trip_service
 from service.itinerary_service import apply_rebooking_plan
 
 logger = logging.getLogger(__name__)
+
+
+async def _dispatch_agent_email(*, to_email: str, subject: str, html: str) -> dict:
+    if get_settings().email_via_celery:
+        from worker.tasks import send_resend_html_email
+
+        send_resend_html_email.delay(to_email=to_email, subject=subject, html=html)
+        return {"sent": False, "email_queued": True, "reason": "celery"}
+    return await send_email_html(to_email=to_email, subject=subject, html=html)
 
 
 async def _confirm_terminal_state_response(
@@ -323,9 +333,11 @@ async def propose_for_trip(
             disruption_type=disruption_type,
             top_options=options,
         )
-        res = await send_email_html(to_email=to_email, subject=subject, html=html)
+        res = await _dispatch_agent_email(to_email=to_email, subject=subject, html=html)
         notification_status["email_sent"] = bool(res.get("sent"))
         notification_status["email_reason"] = res.get("reason")
+        if res.get("email_queued"):
+            notification_status["email_queued"] = True
 
     return AgentProposeResponse(
         proposal_id=proposal_id,
@@ -529,6 +541,7 @@ async def confirm_and_apply(
             trip_pub = await trip_service.get_trip(user_id=user_id, trip_id=tid, session=session)
             itinerary_revision = trip_pub.itinerary_revision
 
+        email_queued = False
         if to_email:
             subject = "ReRoute.AI: Rebooking confirmed"
             html = _build_confirm_email_html(
@@ -537,8 +550,9 @@ async def confirm_and_apply(
                 order_id=duffel_order_id or "N/A",
                 option_id=body.selected_option_id,
             )
-            res = await send_email_html(to_email=to_email, subject=subject, html=html)
+            res = await _dispatch_agent_email(to_email=to_email, subject=subject, html=html)
             email_sent = bool(res.get("sent"))
+            email_queued = bool(res.get("email_queued"))
 
         return AgentConfirmResponse(
             applied=True,
@@ -546,6 +560,7 @@ async def confirm_and_apply(
             message=f"Rebooking applied (order_id={duffel_order_id}).",
             duffel_order_id=duffel_order_id,
             email_sent=email_sent,
+            email_queued=email_queued if email_queued else None,
         )
     except Exception:
         await proposal_service.release_confirm_claim(

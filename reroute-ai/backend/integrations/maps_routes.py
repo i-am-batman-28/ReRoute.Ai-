@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from config import get_settings
+from integrations.http_timeout import integration_timeout
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ async def fetch_directions_summary(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=integration_timeout()) as client:
             r = await client.post(url, json=body, headers=headers)
             r.raise_for_status()
             data = r.json()

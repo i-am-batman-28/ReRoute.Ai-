@@ -5,6 +5,7 @@ from __future__ import annotations
 import httpx
 
 from config import get_settings
+from integrations.http_timeout import integration_timeout
 
 AVIATIONSTACK_URL = "https://api.aviationstack.com/v1/flights"
 
@@ -62,7 +63,7 @@ async def get_flight_status_aviationstack(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
+        async with httpx.AsyncClient(timeout=integration_timeout()) as client:
             r = await client.get(AVIATIONSTACK_URL, params=params)
             r.raise_for_status()
             payload = r.json()

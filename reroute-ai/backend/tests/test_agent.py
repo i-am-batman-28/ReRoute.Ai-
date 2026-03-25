@@ -30,6 +30,26 @@ def test_agent_confirm(client):
     assert r.json()["applied"] is True
 
 
+def test_agent_confirm_idempotent(client):
+    h = signup_and_auth_headers(client)
+    tid = create_demo_trip(client, h)
+    propose = client.post("/api/agent/propose", json={"trip_id": tid}, headers=h)
+    assert propose.status_code == 200
+    proposal_body = propose.json()
+    proposal_id = proposal_body["proposal_id"]
+    selected_option_id = proposal_body["ranked_options"][0]["option_id"]
+    body = {"proposal_id": proposal_id, "selected_option_id": selected_option_id}
+    first_confirm = client.post("/api/agent/confirm", json=body, headers=h)
+    assert first_confirm.status_code == 200
+    assert first_confirm.json()["applied"] is True
+    r2 = client.post("/api/agent/confirm", json=body, headers=h)
+    assert r2.status_code == 200
+    out = r2.json()
+    assert out["applied"] is True
+    assert "idempotent" in out["message"].lower()
+    assert out["duffel_order_id"] is not None
+
+
 def test_agent_requires_auth(client):
     r = client.post("/api/agent/propose", json={"trip_id": "any"})
     assert r.status_code == 401

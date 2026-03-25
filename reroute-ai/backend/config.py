@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./reroute.db"
     debug_sql: bool = False
 
+    # Redis (cache / Celery broker). Compose: `docker compose -f reroute-ai/docker-compose.yml up -d redis`
+    redis_url: str = "redis://localhost:6379/0"
+    celery_broker_url: str | None = None
+    celery_result_backend: str | None = None
+
     # Auth
     jwt_secret_key: str = "change-me-use-long-random-string-in-production"
     jwt_algorithm: str = "HS256"
@@ -42,6 +47,14 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def resolved_celery_broker_url(self) -> str:
+        return self.celery_broker_url or self.redis_url
+
+    @property
+    def resolved_celery_result_backend(self) -> str:
+        return self.celery_result_backend or self.redis_url
 
 
 @lru_cache

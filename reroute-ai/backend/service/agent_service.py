@@ -11,8 +11,10 @@ This implements the production-grade behavior you requested:
 
 from __future__ import annotations
 
+import copy
 import logging
 import uuid
+from typing import Any
 
 from fastapi import HTTPException
 from fastapi import status as http_status
@@ -21,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from agent.tools import fetch_flight_status, fetch_weather_signals, search_alternatives
 from integrations.duffel_client import create_order
 from integrations.resend_client import send_email_html
+from model.proposal_model import RebookingProposal
 from schema.agent_schemas import (
     AgentConfirmRequest,
     AgentConfirmResponse,
@@ -31,6 +34,47 @@ from service import proposal_service, trip_service
 from service.itinerary_service import apply_rebooking_plan
 
 logger = logging.getLogger(__name__)
+
+
+async def _confirm_terminal_state_response(
+    *,
+    row: RebookingProposal,
+    body: AgentConfirmRequest,
+    user_id: str,
+    session: AsyncSession,
+) -> AgentConfirmResponse | None:
+    """Handle applying / applied rows (concurrent confirm or idempotent replay)."""
+    if row.status == "applying":
+        return AgentConfirmResponse(
+            applied=False,
+            itinerary_revision=None,
+            message="Another confirmation request is in progress for this proposal.",
+            duffel_order_id=None,
+            email_sent=False,
+        )
+    if row.status == "applied":
+        if row.selected_offer_id == body.selected_option_id:
+            trip_ctx = (row.context or {}).get("trip_context") or {}
+            tid = trip_ctx.get("trip_id")
+            itinerary_revision: int | None = None
+            if isinstance(tid, str) and tid:
+                trip_pub = await trip_service.get_trip(user_id=user_id, trip_id=tid, session=session)
+                itinerary_revision = trip_pub.itinerary_revision
+            return AgentConfirmResponse(
+                applied=True,
+                itinerary_revision=itinerary_revision,
+                message="Rebooking was already applied for this option (idempotent replay).",
+                duffel_order_id=row.duffel_order_id,
+                email_sent=False,
+            )
+        return AgentConfirmResponse(
+            applied=False,
+            itinerary_revision=None,
+            message="This proposal was already applied with a different option.",
+            duffel_order_id=row.duffel_order_id,
+            email_sent=False,
+        )
+    return None
 
 
 async def propose_for_trip(
@@ -306,12 +350,12 @@ async def confirm_and_apply(
         extra={"proposal_id": body.proposal_id, "option": body.selected_option_id},
     )
 
-    proposal = await proposal_service.fetch_proposal_context(
+    row = await proposal_service.get_proposal_row(
         session=session,
         proposal_id=body.proposal_id,
         user_id=user_id,
     )
-    if not proposal:
+    if not row:
         return AgentConfirmResponse(
             applied=False,
             itinerary_revision=None,
@@ -320,131 +364,197 @@ async def confirm_and_apply(
             email_sent=False,
         )
 
-    trip_context = proposal["trip_context"]
-    booking_mode = proposal.get("booking_mode", "live")
-    options_by_offer_id = proposal.get("options_by_offer_id") or {}
-    option_ctx = options_by_offer_id.get(body.selected_option_id)
-    if not option_ctx:
+    term = await _confirm_terminal_state_response(row=row, body=body, user_id=user_id, session=session)
+    if term is not None:
+        return term
+
+    claimed = await proposal_service.try_claim_confirm(
+        session=session,
+        proposal_id=body.proposal_id,
+        user_id=user_id,
+    )
+    if not claimed:
+        row2 = await proposal_service.get_proposal_row(
+            session=session,
+            proposal_id=body.proposal_id,
+            user_id=user_id,
+        )
+        if not row2:
+            return AgentConfirmResponse(
+                applied=False,
+                itinerary_revision=None,
+                message="Proposal not found. Please propose again.",
+                duffel_order_id=None,
+                email_sent=False,
+            )
+        term2 = await _confirm_terminal_state_response(row=row2, body=body, user_id=user_id, session=session)
+        if term2 is not None:
+            return term2
+        if row2.status == "pending":
+            return AgentConfirmResponse(
+                applied=False,
+                itinerary_revision=None,
+                message="Could not acquire confirmation lock. Please retry.",
+                duffel_order_id=None,
+                email_sent=False,
+            )
         return AgentConfirmResponse(
             applied=False,
             itinerary_revision=None,
-            message="Selected option not found in proposal.",
+            message="Unexpected proposal state during confirmation.",
             duffel_order_id=None,
             email_sent=False,
         )
 
-    # Apply: create Duffel order (or simulate if booking_mode=mock)
     duffel_order_id: str | None = None
     email_sent = False
-    to_email = trip_context.get("user", {}).get("email")
-
-    if booking_mode == "mock":
-        duffel_order_id = f"mock_order_{body.selected_option_id}"
-    else:
-        duffel_passengers = proposal.get("duffel_passengers") or []
-        passenger_details = proposal.get("passengers_details") or []
-
-        try:
-            # Build order passengers payload. Duffel expects passenger objects keyed by Duffel passenger `id`.
-            # We'll map provider passenger ids to our passenger details by order.
-            passengers_payload = []
-            for i, duffel_p in enumerate(duffel_passengers):
-                pid = duffel_p.get("id")
-                base = (
-                    passenger_details[i]
-                    if i < len(passenger_details)
-                    else passenger_details[-1]
-                )
-                passengers_payload.append(
-                    {
-                        "id": pid,
-                        "phone_number": base.get("phone_number"),
-                        "email": base.get("email"),
-                        "born_on": base.get("born_on"),
-                        "title": base.get("title"),
-                        "gender": base.get("gender"),
-                        "family_name": base.get("family_name"),
-                        "given_name": base.get("given_name"),
-                    }
-                )
-
-            order_payload = {
-                "data": {
-                    "selected_offers": [body.selected_option_id],
-                    "payments": option_ctx["payments"],
-                    "passengers": passengers_payload,
-                }
-            }
-            order_resp = await create_order(order_payload=order_payload)
-            duffel_order_id = (order_resp.get("data") or {}).get("id")
-        except Exception as e:
-            logger.exception("Duffel order creation failed; falling back to mock.", extra={"error": str(e)})
-            duffel_order_id = f"mock_order_{body.selected_option_id}"
-
-    apply_res = await apply_rebooking_plan(trip_context=trip_context, option=option_ctx)
-    arrival_raw = apply_res.get("arrival_time") or option_ctx.get("arrival_time")
-    arrival_s = str(arrival_raw) if arrival_raw else None
-
-    tid = trip_context.get("trip_id")
+    to_email: str | None = None
+    trip_context: dict[str, Any] = {}
+    proposal: dict[str, Any] = {}
+    tid: object = None
     itinerary_revision: int | None = None
 
-    if isinstance(tid, str) and tid:
-        await trip_service.bump_itinerary_revision(
-            user_id=user_id, trip_id=tid, session=session, commit=False
-        )
-    marked = await proposal_service.mark_proposal_applied(
-        session=session,
-        proposal_id=body.proposal_id,
-        user_id=user_id,
-        disruption_type=proposal.get("disruption_type"),
-        selected_offer_id=body.selected_option_id,
-        duffel_order_id=duffel_order_id,
-        commit=False,
-    )
-    if not marked:
-        await session.rollback()
-        return AgentConfirmResponse(
-            applied=False,
-            itinerary_revision=None,
-            message="Could not finalize rebooking (proposal may have expired).",
-            duffel_order_id=duffel_order_id,
-            email_sent=False,
-        )
-    if isinstance(tid, str) and tid:
-        await trip_service.merge_applied_rebooking_to_snapshot(
-            user_id=user_id,
-            trip_id=tid,
+    try:
+        proposal = copy.deepcopy(row.context)
+        trip_context = proposal["trip_context"]
+        booking_mode = proposal.get("booking_mode", "live")
+        options_by_offer_id = proposal.get("options_by_offer_id") or {}
+        option_ctx = options_by_offer_id.get(body.selected_option_id)
+        if not option_ctx:
+            await proposal_service.release_confirm_claim(
+                session=session,
+                proposal_id=body.proposal_id,
+                user_id=user_id,
+            )
+            await session.flush()
+            return AgentConfirmResponse(
+                applied=False,
+                itinerary_revision=None,
+                message="Selected option not found in proposal.",
+                duffel_order_id=None,
+                email_sent=False,
+            )
+
+        to_email = trip_context.get("user", {}).get("email")
+
+        if booking_mode == "mock":
+            duffel_order_id = f"mock_order_{body.selected_option_id}"
+        else:
+            duffel_passengers = proposal.get("duffel_passengers") or []
+            passenger_details = proposal.get("passengers_details") or []
+
+            try:
+                passengers_payload = []
+                for i, duffel_p in enumerate(duffel_passengers):
+                    pid = duffel_p.get("id")
+                    base = (
+                        passenger_details[i]
+                        if i < len(passenger_details)
+                        else passenger_details[-1]
+                    )
+                    passengers_payload.append(
+                        {
+                            "id": pid,
+                            "phone_number": base.get("phone_number"),
+                            "email": base.get("email"),
+                            "born_on": base.get("born_on"),
+                            "title": base.get("title"),
+                            "gender": base.get("gender"),
+                            "family_name": base.get("family_name"),
+                            "given_name": base.get("given_name"),
+                        }
+                    )
+
+                order_payload = {
+                    "data": {
+                        "selected_offers": [body.selected_option_id],
+                        "payments": option_ctx["payments"],
+                        "passengers": passengers_payload,
+                    }
+                }
+                order_resp = await create_order(order_payload=order_payload)
+                duffel_order_id = (order_resp.get("data") or {}).get("id")
+            except Exception as e:
+                logger.exception(
+                    "Duffel order creation failed; falling back to mock.", extra={"error": str(e)}
+                )
+                duffel_order_id = f"mock_order_{body.selected_option_id}"
+
+        apply_res = await apply_rebooking_plan(trip_context=trip_context, option=option_ctx)
+        arrival_raw = apply_res.get("arrival_time") or option_ctx.get("arrival_time")
+        arrival_s = str(arrival_raw) if arrival_raw else None
+
+        tid = trip_context.get("trip_id")
+
+        if isinstance(tid, str) and tid:
+            await trip_service.bump_itinerary_revision(
+                user_id=user_id, trip_id=tid, session=session, commit=False
+            )
+        marked = await proposal_service.mark_proposal_applied(
             session=session,
+            proposal_id=body.proposal_id,
+            user_id=user_id,
+            disruption_type=proposal.get("disruption_type"),
             selected_offer_id=body.selected_option_id,
             duffel_order_id=duffel_order_id,
-            arrival_time=arrival_s,
             commit=False,
         )
-    await session.commit()
+        if not marked:
+            await proposal_service.release_confirm_claim(
+                session=session,
+                proposal_id=body.proposal_id,
+                user_id=user_id,
+            )
+            await session.rollback()
+            return AgentConfirmResponse(
+                applied=False,
+                itinerary_revision=None,
+                message="Could not finalize rebooking (proposal may have expired).",
+                duffel_order_id=duffel_order_id,
+                email_sent=False,
+            )
+        if isinstance(tid, str) and tid:
+            await trip_service.merge_applied_rebooking_to_snapshot(
+                user_id=user_id,
+                trip_id=tid,
+                session=session,
+                selected_offer_id=body.selected_option_id,
+                duffel_order_id=duffel_order_id,
+                arrival_time=arrival_s,
+                commit=False,
+            )
+        await session.commit()
 
-    if isinstance(tid, str) and tid:
-        trip_pub = await trip_service.get_trip(user_id=user_id, trip_id=tid, session=session)
-        itinerary_revision = trip_pub.itinerary_revision
+        if isinstance(tid, str) and tid:
+            trip_pub = await trip_service.get_trip(user_id=user_id, trip_id=tid, session=session)
+            itinerary_revision = trip_pub.itinerary_revision
 
-    # Email notification
-    if to_email:
-        subject = "ReRoute.AI: Rebooking confirmed"
-        html = _build_confirm_email_html(
-            to_name=trip_context["user"].get("full_name", "Traveler"),
-            disruption_type=proposal.get("disruption_type"),
-            order_id=duffel_order_id or "N/A",
-            option_id=body.selected_option_id,
+        if to_email:
+            subject = "ReRoute.AI: Rebooking confirmed"
+            html = _build_confirm_email_html(
+                to_name=trip_context["user"].get("full_name", "Traveler"),
+                disruption_type=proposal.get("disruption_type"),
+                order_id=duffel_order_id or "N/A",
+                option_id=body.selected_option_id,
+            )
+            res = await send_email_html(to_email=to_email, subject=subject, html=html)
+            email_sent = bool(res.get("sent"))
+
+        return AgentConfirmResponse(
+            applied=True,
+            itinerary_revision=itinerary_revision,
+            message=f"Rebooking applied (order_id={duffel_order_id}).",
+            duffel_order_id=duffel_order_id,
+            email_sent=email_sent,
         )
-        res = await send_email_html(to_email=to_email, subject=subject, html=html)
-        email_sent = bool(res.get("sent"))
-
-    return AgentConfirmResponse(
-        applied=True,
-        itinerary_revision=itinerary_revision if itinerary_revision is not None else 1,
-        message=f"Rebooking applied (order_id={duffel_order_id}).",
-        duffel_order_id=duffel_order_id,
-        email_sent=email_sent,
-    )
+    except Exception:
+        await proposal_service.release_confirm_claim(
+            session=session,
+            proposal_id=body.proposal_id,
+            user_id=user_id,
+        )
+        await session.rollback()
+        raise
 
 
 def _build_propose_email_html(*, to_name: str, disruption_type: str, top_options: list[RankedOptionDTO]) -> str:

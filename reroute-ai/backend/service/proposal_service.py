@@ -6,6 +6,7 @@ import copy
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config import get_settings
 from dao.disruption_event_dao import DisruptionEventDAO
 from dao.proposal_dao import ProposalDAO
 from model.proposal_model import RebookingProposal
@@ -116,3 +117,12 @@ async def mark_proposal_applied(
     if commit:
         await session.commit()
     return True
+
+
+async def release_stale_applying(
+    *,
+    session: AsyncSession,
+    older_than_minutes: int | None = None,
+) -> int:
+    minutes = older_than_minutes if older_than_minutes is not None else get_settings().stale_applying_minutes
+    return await ProposalDAO(session).revert_stale_applying(older_than_minutes=minutes)

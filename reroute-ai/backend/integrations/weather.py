@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import httpx
 
+from integrations.http_timeout import integration_timeout
+
 
 async def fetch_openmeteo_hourly(*, latitude: float, longitude: float) -> dict:
     """
@@ -25,7 +27,7 @@ async def fetch_openmeteo_hourly(*, latitude: float, longitude: float) -> dict:
             ]
         ),
     }
-    async with httpx.AsyncClient(timeout=20) as client:
+    async with httpx.AsyncClient(timeout=integration_timeout()) as client:
         r = await client.get(url, params=params)
         r.raise_for_status()
         return r.json()

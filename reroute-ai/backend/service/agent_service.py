@@ -21,12 +21,15 @@ from fastapi import status as http_status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent.tools import fetch_flight_status, fetch_weather_signals, search_alternatives
+from config import get_settings
 from integrations.duffel_client import create_order
 from integrations.resend_client import send_email_html
 from model.proposal_model import RebookingProposal
 from schema.agent_schemas import (
     AgentConfirmRequest,
     AgentConfirmResponse,
+    AgentProposeJobAccepted,
+    AgentProposeJobStatus,
     AgentProposeResponse,
     RankedOptionDTO,
 )
@@ -34,6 +37,96 @@ from service import proposal_service, trip_service
 from service.itinerary_service import apply_rebooking_plan
 
 logger = logging.getLogger(__name__)
+
+
+async def _dispatch_agent_email(*, to_email: str, subject: str, html: str) -> dict:
+    if get_settings().email_via_celery:
+        try:
+            from worker.tasks import send_resend_html_email
+
+            send_resend_html_email.delay(to_email=to_email, subject=subject, html=html)
+            return {"sent": False, "email_queued": True, "reason": "celery"}
+        except Exception:
+            logger.exception("email_celery_enqueue_failed_falling_back_inline")
+            return await send_email_html(to_email=to_email, subject=subject, html=html)
+    return await send_email_html(to_email=to_email, subject=subject, html=html)
+
+
+def enqueue_async_propose(
+    *,
+    user_id: str,
+    trip_id: str,
+    simulate_disruption: str | None,
+) -> AgentProposeJobAccepted:
+    from utils.job_redis import register_propose_job
+    from worker.celery_app import celery_app
+    from worker.tasks import run_agent_propose_task
+
+    settings = get_settings()
+    try:
+        ar = run_agent_propose_task.apply_async(
+            args=[user_id, trip_id, simulate_disruption],
+        )
+    except Exception:
+        logger.exception("async_propose_celery_enqueue_failed")
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Async propose unavailable (Redis/Celery must be reachable).",
+        ) from None
+
+    try:
+        register_propose_job(task_id=ar.id, user_id=user_id)
+    except Exception:
+        logger.exception("async_propose_redis_register_failed")
+        try:
+            celery_app.control.revoke(ar.id, terminate=True)
+        except Exception:
+            logger.exception("async_propose_revoke_after_register_failure_failed")
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Async propose unavailable (job registration failed).",
+        ) from None
+
+    poll_path = f"{settings.api_prefix}/agent/propose/jobs/{ar.id}"
+    return AgentProposeJobAccepted(task_id=ar.id, poll_path=poll_path)
+
+
+def get_async_propose_job_status(*, task_id: str, user_id: str) -> AgentProposeJobStatus:
+    from celery.result import AsyncResult
+
+    from utils.job_redis import JobRedisUnavailableError, get_propose_job_owner
+    from worker.celery_app import celery_app
+
+    try:
+        owner = get_propose_job_owner(task_id)
+    except JobRedisUnavailableError:
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Job status temporarily unavailable.",
+        ) from None
+
+    if owner != user_id:
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Job not found")
+
+    ar = AsyncResult(task_id, app=celery_app)
+    st = ar.state
+    if st == "SUCCESS":
+        raw = ar.result
+        if isinstance(raw, dict):
+            return AgentProposeJobStatus(
+                task_id=task_id,
+                state=st,
+                result=AgentProposeResponse.model_validate(raw),
+                error=None,
+            )
+        return AgentProposeJobStatus(task_id=task_id, state=st, result=None, error=None)
+    if st == "FAILURE":
+        logger.warning(
+            "async_propose_task_failed",
+            extra={"task_id": task_id, "celery_info_type": type(ar.info).__name__},
+        )
+        return AgentProposeJobStatus(task_id=task_id, state=st, result=None, error="task_failed")
+    return AgentProposeJobStatus(task_id=task_id, state=st, result=None, error=None)
 
 
 async def _confirm_terminal_state_response(
@@ -323,9 +416,11 @@ async def propose_for_trip(
             disruption_type=disruption_type,
             top_options=options,
         )
-        res = await send_email_html(to_email=to_email, subject=subject, html=html)
+        res = await _dispatch_agent_email(to_email=to_email, subject=subject, html=html)
         notification_status["email_sent"] = bool(res.get("sent"))
         notification_status["email_reason"] = res.get("reason")
+        if res.get("email_queued"):
+            notification_status["email_queued"] = True
 
     return AgentProposeResponse(
         proposal_id=proposal_id,
@@ -529,6 +624,7 @@ async def confirm_and_apply(
             trip_pub = await trip_service.get_trip(user_id=user_id, trip_id=tid, session=session)
             itinerary_revision = trip_pub.itinerary_revision
 
+        email_queued = False
         if to_email:
             subject = "ReRoute.AI: Rebooking confirmed"
             html = _build_confirm_email_html(
@@ -537,8 +633,9 @@ async def confirm_and_apply(
                 order_id=duffel_order_id or "N/A",
                 option_id=body.selected_option_id,
             )
-            res = await send_email_html(to_email=to_email, subject=subject, html=html)
+            res = await _dispatch_agent_email(to_email=to_email, subject=subject, html=html)
             email_sent = bool(res.get("sent"))
+            email_queued = bool(res.get("email_queued"))
 
         return AgentConfirmResponse(
             applied=True,
@@ -546,6 +643,7 @@ async def confirm_and_apply(
             message=f"Rebooking applied (order_id={duffel_order_id}).",
             duffel_order_id=duffel_order_id,
             email_sent=email_sent,
+            email_queued=email_queued if email_queued else None,
         )
     except Exception:
         await proposal_service.release_confirm_claim(

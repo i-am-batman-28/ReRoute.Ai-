@@ -8,6 +8,7 @@ Requires Redis (e.g. `docker compose -f ../docker-compose.yml up -d redis`).
 from __future__ import annotations
 
 from celery import Celery
+from celery.schedules import crontab
 
 from config import get_settings
 
@@ -29,6 +30,12 @@ def _make_celery() -> Celery:
         accept_content=["json"],
         timezone="UTC",
         enable_utc=True,
+        beat_schedule={
+            "release-stale-applying": {
+                "task": "reroute.agent.release_stale_applying",
+                "schedule": crontab(minute="*/5"),
+            },
+        },
     )
     return app
 

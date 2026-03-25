@@ -43,6 +43,15 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str | None = None
     RESEND_FROM_EMAIL: str = "noreply@reroute.ai"
     EMAIL_ENABLED: bool = True
+    # When True, agent propose/confirm enqueue Resend sends to Celery (worker must run).
+    email_via_celery: bool = False
+
+    # Outbound HTTP (Duffel, AviationStack, Open-Meteo, Resend, ORS)
+    http_timeout_connect: float = 10.0
+    http_timeout_read: float = 90.0
+
+    # Reset proposals stuck in `applying` (worker beat + manual task).
+    stale_applying_minutes: int = 15
 
     @property
     def cors_origins_list(self) -> list[str]:

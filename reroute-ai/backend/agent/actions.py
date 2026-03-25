@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class ActionPhase(str, Enum):
+class ActionPhase(StrEnum):
     OBSERVE = "observe"
     PROPOSE = "propose"
     AWAIT_CONFIRM = "await_confirm"

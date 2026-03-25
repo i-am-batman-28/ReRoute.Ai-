@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from dao.base_dao import BaseDAO
@@ -79,6 +79,34 @@ class ProposalDAO(BaseDAO):
         for trip_id, cnt in result.all():
             counts[str(trip_id)] = int(cnt)
         return counts
+
+    async def try_claim_pending_for_confirm(self, *, proposal_id: str, user_id: str) -> bool:
+        """Atomically move pending -> applying so only one confirm proceeds to external booking."""
+        stmt = (
+            update(RebookingProposal)
+            .where(
+                RebookingProposal.id == proposal_id,
+                RebookingProposal.user_id == user_id,
+                RebookingProposal.status == "pending",
+            )
+            .values(status="applying")
+        )
+        res = await self.session.execute(stmt)
+        await self.session.flush()
+        return res.rowcount == 1
+
+    async def release_applying_confirm(self, *, proposal_id: str, user_id: str) -> None:
+        stmt = (
+            update(RebookingProposal)
+            .where(
+                RebookingProposal.id == proposal_id,
+                RebookingProposal.user_id == user_id,
+                RebookingProposal.status == "applying",
+            )
+            .values(status="pending")
+        )
+        await self.session.execute(stmt)
+        await self.session.flush()
 
     async def mark_applied(
         self,

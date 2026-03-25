@@ -20,6 +20,24 @@ async def get_proposal_row(
     return await ProposalDAO(session).get_by_id_for_user(proposal_id=proposal_id, user_id=user_id)
 
 
+async def try_claim_confirm(
+    *,
+    session: AsyncSession,
+    proposal_id: str,
+    user_id: str,
+) -> bool:
+    return await ProposalDAO(session).try_claim_pending_for_confirm(proposal_id=proposal_id, user_id=user_id)
+
+
+async def release_confirm_claim(
+    *,
+    session: AsyncSession,
+    proposal_id: str,
+    user_id: str,
+) -> None:
+    await ProposalDAO(session).release_applying_confirm(proposal_id=proposal_id, user_id=user_id)
+
+
 async def persist_new_proposal(
     *,
     session: AsyncSession,
@@ -77,7 +95,7 @@ async def mark_proposal_applied(
     row = await pdao.get_by_id_for_user(proposal_id=proposal_id, user_id=user_id)
     if not row:
         return False
-    if row.status != "pending":
+    if row.status != "applying":
         return False
     await pdao.mark_applied(
         row,

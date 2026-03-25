@@ -58,6 +58,8 @@ export default function SignupPage() {
       setStoredToken(loginData.access_token);
       router.push("/dashboard");
       router.refresh();
+    } catch {
+      setError("Network error — is the API running?");
     } finally {
       setLoading(false);
     }

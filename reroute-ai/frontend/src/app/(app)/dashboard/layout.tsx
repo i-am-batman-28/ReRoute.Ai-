@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { Instrument_Sans, Instrument_Serif, Playfair_Display } from "next/font/google";
 
+import "@/components/reroute/reroute-dashboard-a.css";
+import "@/components/reroute/reroute-dashboard-b.css";
+
 const playfair = Playfair_Display({
   weight: ["400", "500", "600"],
   subsets: ["latin"],

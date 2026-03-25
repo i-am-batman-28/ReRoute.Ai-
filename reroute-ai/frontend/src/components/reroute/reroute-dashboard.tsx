@@ -33,9 +33,6 @@ import type {
   TripLegPublic,
 } from "@/lib/api-types";
 
-import "./reroute-dashboard-a.css";
-import "./reroute-dashboard-b.css";
-
 type LogDot = "g" | "a" | "r" | "b";
 
 type LogLine = {

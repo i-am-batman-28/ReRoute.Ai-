@@ -37,6 +37,8 @@ export default function HomePage() {
       setStoredToken(data.access_token);
       router.push("/dashboard");
       router.refresh();
+    } catch {
+      setError("Network error — is the API running?");
     } finally {
       setLoading(false);
     }

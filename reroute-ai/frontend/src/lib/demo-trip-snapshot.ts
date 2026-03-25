@@ -2,8 +2,15 @@
  * Demo snapshot for POST /api/trips — same shape as backend `demo_snapshot_for_api()`
  * (no trip_id; server injects it).
  */
+function departureDateIso(daysFromNow: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + daysFromNow);
+  return d.toISOString().slice(0, 10);
+}
+
 export function demoTripSnapshot(): Record<string, unknown> {
   const scheduled = new Date().toISOString();
+  const depart = departureDateIso(14);
   return {
     passengers: [
       {
@@ -20,10 +27,10 @@ export function demoTripSnapshot(): Record<string, unknown> {
     legs: {
       primary_flight: {
         flight_number: "2117",
-        date: "2026-04-01",
+        date: depart,
         origin: "NYC",
         destination: "ATL",
-        scheduled_departure_date: "2026-04-01",
+        scheduled_departure_date: depart,
       },
       connection: { departure_after_arrival_minutes: 90 },
       hotel: { check_in_buffer_minutes: 60 },

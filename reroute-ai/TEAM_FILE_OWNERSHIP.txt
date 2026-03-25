@@ -63,11 +63,13 @@ TEAMMATE 3 — PRODUCT SURFACE & OUTCOMES
 
   frontend/               (entire Next.js app)
 
+
+
   backend/model/user_model.py
   backend/dao/user_dao.py
   backend/service/user_service.py
   backend/service/itinerary_service.py
-
+   
   backend/routers/user_router.py
   backend/routers/health_router.py
 

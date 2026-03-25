@@ -9,13 +9,6 @@ AviationStack
   https://aviationstack.com
   Free: small monthly quota — good for demos; watch rate limits.
 
-OpenSky Network
-  https://opensky-network.org
-  Free: registration — live ADS-B / state vectors; research-style demos.
-
-Aviation Edge
-  https://aviation-edge.com
-  Free: limited tier — check current limits for prototyping.
 
 
 FLIGHT SEARCH / ALTERNATIVES (SANDBOX / TEST)

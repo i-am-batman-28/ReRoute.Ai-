@@ -3,21 +3,47 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_BACKEND_DIR = Path(__file__).resolve().parent
+_PROJECT_DIR = _BACKEND_DIR.parent  # reroute-ai/
+_REPO_ROOT = _PROJECT_DIR.parent  # ReRoute.Ai- (workspace root)
+
+
+def _discover_env_files() -> tuple[Path, ...] | None:
+    """
+    Load env files in order; later files override earlier ones (pydantic-settings).
+
+    Search paths (first → last priority for overrides):
+      1. `<workspace>/ReRoute.Ai-/.env`
+      2. `<workspace>/ReRoute.Ai-/reroute-ai/.env`
+      3. `<workspace>/ReRoute.Ai-/reroute-ai/backend/.env`
+    """
+    candidates = (
+        _REPO_ROOT / ".env",
+        _PROJECT_DIR / ".env",
+        _BACKEND_DIR / ".env",
+    )
+    found = tuple(p for p in candidates if p.is_file())
+    return found if found else None
+
 
 class Settings(BaseSettings):
     """
-    Settings loaded from the workspace root `.env`.
+    Settings from environment variables and optional `.env` files.
 
-    This ensures the backend can see keys you already set at repo root.
+    Files loaded (when present), low → high precedence: repo root, `reroute-ai/.env`,
+    `reroute-ai/backend/.env`. OS environment variables override file values.
     """
 
-    _env_file = Path(__file__).resolve().parents[2] / ".env"
-    model_config = SettingsConfigDict(env_file=str(_env_file), extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=_discover_env_files(),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     api_prefix: str = "/api"
     cors_origins: str = "http://localhost:3000"
 
-    # Postgres: postgresql+asyncpg://user:pass@host:5433/dbname (see repo root `.env.example` + docker-compose).
+    # Postgres: postgresql+asyncpg://user:pass@host:5433/dbname (see `.env.example` + docker-compose).
     database_url: str = "sqlite+aiosqlite:///./reroute.db"
     debug_sql: bool = False
 
@@ -31,7 +57,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7
 
-    # External services
+    # External services (used by integrations/* and services)
     AVIATION_STACK_API_KEY: str | None = None
     OPEN_METEO_ENABLED: bool = True
 
@@ -52,6 +78,9 @@ class Settings(BaseSettings):
 
     # Reset proposals stuck in `applying` (worker beat + manual task).
     stale_applying_minutes: int = 15
+
+    # Agent / LLM (optional; LangChain also reads OPENAI_API_KEY from the process env)
+    OPENAI_API_KEY: str | None = None
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -1,1 +1,0 @@
-ReRoute.AI — directory: frontend/src/app/(app)/trips/[tripId]

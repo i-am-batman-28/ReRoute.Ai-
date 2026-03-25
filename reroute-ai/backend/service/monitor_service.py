@@ -44,7 +44,7 @@ async def build_status(*, session: AsyncSession, user_id: str) -> MonitorStatusR
             )
         )
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     logger.info(
         "monitor_status",
         extra={"user_id": user_id, "trip_count": total_trip_count, "trips_shown": len(summaries)},

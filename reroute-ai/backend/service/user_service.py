@@ -33,6 +33,13 @@ from utils.token_hash import hash_refresh_token
 logger = logging.getLogger(__name__)
 
 
+def _ensure_utc(dt: datetime) -> datetime:
+    """SQLite may return naive datetimes; app logic uses UTC-aware `now`."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
+
+
 @dataclass(frozen=True)
 class AuthTokens:
     access_token: str
@@ -185,7 +192,7 @@ async def refresh_tokens(request: Request, session: AsyncSession) -> AuthTokens:
         logger.warning("refresh_token_reuse", extra={"family_id": row.family_id})
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token revoked")
 
-    if row.expires_at <= now:
+    if _ensure_utc(row.expires_at) <= now:
         await rt_dao.revoke(row.id)
         await session.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired")

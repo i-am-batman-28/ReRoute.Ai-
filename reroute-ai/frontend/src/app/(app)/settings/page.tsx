@@ -18,7 +18,7 @@ import {
 import { clearStoredToken } from "@/lib/auth-token";
 
 const inputClass =
-  "mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/30";
+  "mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-[color:var(--primary-soft)] focus:outline-none focus:ring-1 focus:ring-[color:var(--primary-soft)]";
 const labelClass = "block text-xs font-medium uppercase tracking-wide text-zinc-500";
 
 function formatDt(iso: string | null | undefined): string {
@@ -177,7 +177,7 @@ export default function SettingsPage() {
         >
           ← Overview
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-50">Account settings</h1>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">Account settings</h1>
         <p className="mt-1 text-sm text-zinc-500">Profile, sign-in methods, and active sessions.</p>
       </div>
 
@@ -214,11 +214,16 @@ export default function SettingsPage() {
               {profileErr}
             </p>
           ) : null}
-          {profileMsg ? <p className="text-sm text-emerald-400">{profileMsg}</p> : null}
+          {profileMsg ? <p className="text-sm text-[color:var(--primary)]">{profileMsg}</p> : null}
           <button
             type="submit"
             disabled={profileLoading}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 disabled:opacity-50"
+            className="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:opacity-80 disabled:opacity-50"
+            style={{
+              borderColor: "var(--stroke-strong)",
+              background: "var(--surface-1)",
+              color: "var(--fg)",
+            }}
           >
             {profileLoading ? "Saving…" : "Save profile"}
           </button>
@@ -296,17 +301,22 @@ export default function SettingsPage() {
               {pwErr}
             </p>
           ) : null}
-          {pwMsg ? <p className="text-sm text-emerald-400">{pwMsg}</p> : null}
+          {pwMsg ? <p className="text-sm text-[color:var(--primary)]">{pwMsg}</p> : null}
           <button
             type="submit"
             disabled={pwLoading}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 disabled:opacity-50"
+            className="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:opacity-80 disabled:opacity-50"
+            style={{
+              borderColor: "var(--stroke-strong)",
+              background: "var(--surface-1)",
+              color: "var(--fg)",
+            }}
           >
             {pwLoading ? "Saving…" : "Save password"}
           </button>
         </form>
         <p className="mt-3 text-xs text-zinc-500">
-          <Link href="/forgot-password" className="text-emerald-400/90 underline-offset-2 hover:underline">
+          <Link href="/forgot-password" className="text-[color:var(--primary)] underline-offset-2 hover:underline">
             Forgot password? Email reset
           </Link>
         </p>
@@ -321,7 +331,12 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => void onRevokeAll()}
-            className="shrink-0 rounded-lg border border-red-500/35 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/20"
+            className="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80"
+            style={{
+              borderColor: "rgba(248,113,113,0.35)",
+              background: "rgba(248,113,113,0.1)",
+              color: "var(--danger)",
+            }}
           >
             Sign out everywhere
           </button>
@@ -333,7 +348,7 @@ export default function SettingsPage() {
         ) : null}
         {sessLoading ? (
           <div className="mt-6 flex items-center gap-2 text-sm text-zinc-500">
-            <Loader2 className="h-4 w-4 animate-spin text-emerald-500/70" aria-hidden />
+            <Loader2 className="h-4 w-4 animate-spin text-[color:var(--primary)]" aria-hidden />
             Loading sessions…
           </div>
         ) : sessions && sessions.length === 0 ? (

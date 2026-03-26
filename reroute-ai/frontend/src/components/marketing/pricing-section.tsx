@@ -14,9 +14,7 @@ type Plan = {
   id: string;
   name: string;
   blurb: string;
-  /** INR per month when billed monthly. */
   monthly: number;
-  /** INR per month equivalent when billed annually (~20% off monthly × 12). */
   annualPerMonth: number;
   cta: string;
   href: string;
@@ -90,9 +88,13 @@ function PriceBlock({ plan, billing }: { plan: Plan; billing: Billing }) {
     return (
       <div className="mt-6 flex flex-col gap-1">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">₹0</span>
+          <span className="text-4xl font-semibold tracking-tight sm:text-5xl" style={{ color: "var(--fg)" }}>
+            ₹0
+          </span>
         </div>
-        <p className="text-sm text-zinc-500">Forever free · upgrade when you&apos;re ready</p>
+        <p className="text-sm" style={{ color: "var(--subtle)" }}>
+          Forever free · upgrade when you&apos;re ready
+        </p>
       </div>
     );
   }
@@ -103,12 +105,18 @@ function PriceBlock({ plan, billing }: { plan: Plan; billing: Billing }) {
     <div className="mt-6 flex flex-col gap-1">
       <div className="flex flex-wrap items-baseline gap-2">
         {showStrike ? (
-          <span className="text-lg font-medium text-zinc-600 line-through">₹{formatInr(plan.monthly)}</span>
+          <span className="text-lg font-medium line-through" style={{ color: "var(--subtle)" }}>
+            ₹{formatInr(plan.monthly)}
+          </span>
         ) : null}
-        <span className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">₹{formatInr(perMonth)}</span>
-        <span className="text-sm font-medium text-zinc-500">/mo</span>
+        <span className="text-4xl font-semibold tracking-tight sm:text-5xl" style={{ color: "var(--fg)" }}>
+          ₹{formatInr(perMonth)}
+        </span>
+        <span className="text-sm font-medium" style={{ color: "var(--subtle)" }}>
+          /mo
+        </span>
       </div>
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm" style={{ color: "var(--subtle)" }}>
         {billing === "annual" ? (
           <>Billed annually · {plan.footnote ?? "per user / month"} · + GST as applicable</>
         ) : (
@@ -126,22 +134,41 @@ export function PricingSection() {
   const [billing, setBilling] = useState<Billing>("annual");
 
   return (
-    <section id="pricing" className="scroll-mt-20 border-t border-zinc-800/80 bg-zinc-950 py-16 sm:py-24">
+    <section
+      id="pricing"
+      className="scroll-mt-20 border-t py-16 sm:py-24"
+      style={{ borderColor: "var(--stroke)", background: "var(--bg)" }}
+    >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        {/* Header */}
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-400/90">Pricing</p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl md:text-4xl">
+          <p
+            className="text-[11px] font-semibold uppercase tracking-[0.22em]"
+            style={{ color: "var(--accent)" }}
+          >
+            Pricing
+          </p>
+          <h2
+            className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl"
+            style={{ color: "var(--fg)" }}
+          >
             Plans that scale with disruption load.
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-zinc-400 sm:text-base">
+          <p className="mt-4 text-sm leading-relaxed sm:text-base" style={{ color: "var(--muted)" }}>
             Start free, move to Operator when you need depth, or run Mission control for a team. Enterprise options for
             programs and partners.
           </p>
         </div>
 
+        {/* Billing toggle */}
         <div className="mx-auto mt-10 flex max-w-md flex-col items-center gap-3 sm:mt-12">
           <div
-            className="inline-flex rounded-full border border-zinc-800/90 bg-zinc-900/60 p-1 shadow-inner shadow-black/20"
+            className="inline-flex rounded-full border p-1 shadow-inner"
+            style={{
+              borderColor: "var(--stroke)",
+              background: "var(--surface-1)",
+              boxShadow: "inset 0 1px 4px rgba(0,0,0,0.15)",
+            }}
             role="group"
             aria-label="Billing period"
           >
@@ -150,10 +177,12 @@ export function PricingSection() {
               onClick={() => setBilling("monthly")}
               className={cn(
                 "rounded-full px-4 py-2 text-sm font-medium transition",
-                billing === "monthly"
-                  ? "bg-zinc-100 text-zinc-950 shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-200",
               )}
+              style={
+                billing === "monthly"
+                  ? { background: "var(--fg)", color: "var(--bg)", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }
+                  : { color: "var(--muted)" }
+              }
             >
               Monthly
             </button>
@@ -162,54 +191,100 @@ export function PricingSection() {
               onClick={() => setBilling("annual")}
               className={cn(
                 "rounded-full px-4 py-2 text-sm font-medium transition",
-                billing === "annual"
-                  ? "bg-emerald-500 text-zinc-950 shadow-sm shadow-emerald-500/25"
-                  : "text-zinc-400 hover:text-zinc-200",
               )}
+              style={
+                billing === "annual"
+                  ? {
+                      background: "var(--primary)",
+                      color: "#fff",
+                      boxShadow: "0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent)",
+                    }
+                  : { color: "var(--muted)" }
+              }
             >
               Annual
             </button>
           </div>
-          <p className="text-center text-xs font-medium text-emerald-400/90">{ANNUAL_DISCOUNT_LABEL} on annual billing</p>
+          <p className="text-center text-xs font-medium" style={{ color: "var(--primary)" }}>
+            {ANNUAL_DISCOUNT_LABEL} on annual billing
+          </p>
         </div>
 
+        {/* Plan cards */}
         <div className="mt-10 grid gap-5 lg:grid-cols-3 lg:items-stretch">
           {PLANS.map((plan) => (
             <article
               key={plan.id}
-              className={cn(
-                "relative flex flex-col rounded-2xl border p-6 sm:p-8",
+              className="relative flex flex-col rounded-2xl border p-6 sm:p-8"
+              style={
                 plan.featured
-                  ? "border-emerald-500/35 bg-gradient-to-b from-emerald-950/40 via-zinc-900/60 to-zinc-950 shadow-lg shadow-emerald-950/30 ring-1 ring-emerald-500/25 lg:-mt-1 lg:mb-1"
-                  : "border-zinc-800/90 bg-zinc-900/40 shadow-sm shadow-black/25",
-              )}
+                  ? {
+                      borderColor: "var(--stroke)",
+                      background: "var(--surface-1)",
+                      boxShadow: "var(--shadow-1)",
+                      marginTop: "-4px",
+                      marginBottom: "4px",
+                    }
+                  : {
+                      borderColor: "var(--stroke)",
+                      background: "var(--surface-1)",
+                      boxShadow: "var(--shadow-1)",
+                    }
+              }
             >
               {plan.featured ? (
-                <span className="absolute right-5 top-5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300 ring-1 ring-emerald-500/30">
+                <span
+                  className="absolute right-5 top-5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-[var(--primary-soft)]"
+                  style={{
+                    background: "var(--primary-soft)",
+                    color: "var(--primary)",
+                  }}
+                >
                   Most popular
                 </span>
               ) : null}
-              <h3 className="text-lg font-semibold tracking-tight text-white sm:text-xl">{plan.name}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">{plan.blurb}</p>
+              <h3 className="text-lg font-semibold tracking-tight sm:text-xl" style={{ color: "var(--fg)" }}>
+                {plan.name}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
+                {plan.blurb}
+              </p>
               <PriceBlock plan={plan} billing={billing} />
               <Link
                 href={plan.href}
-                className={cn(
-                  "mt-8 inline-flex min-h-[48px] w-full items-center justify-center rounded-full px-5 text-sm font-semibold transition",
+                className="mt-8 inline-flex min-h-[48px] w-full items-center justify-center rounded-full px-5 text-sm font-semibold transition hover:opacity-90"
+                style={
                   plan.featured
-                    ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 hover:bg-emerald-400"
-                    : "border border-zinc-700/90 bg-zinc-950/50 text-white hover:border-zinc-600 hover:bg-zinc-900/80",
-                )}
+                    ? {
+                        background: "var(--primary)",
+                        color: "#fff",
+                        boxShadow: "0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent)",
+                      }
+                    : {
+                        borderColor: "var(--stroke-strong)",
+                        border: "1px solid",
+                        background: "var(--surface-0)",
+                        color: "var(--fg)",
+                      }
+                }
               >
                 {plan.cta}
               </Link>
-              <ul className="mt-8 flex flex-col gap-3 text-sm text-zinc-300">
+              <ul className="mt-8 flex flex-col gap-3 text-sm">
                 {plan.features.map((f) => (
                   <li key={f} className="flex gap-3">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/25">
+                    <span
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ring-1"
+                      style={{
+                        background: "var(--primary-soft)",
+                        color: "var(--primary)",
+                      }}
+                    >
                       <Check className="h-3 w-3" strokeWidth={2.5} aria-hidden />
                     </span>
-                    <span className="leading-snug text-zinc-400">{f}</span>
+                    <span className="leading-snug" style={{ color: "var(--muted)" }}>
+                      {f}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -217,27 +292,39 @@ export function PricingSection() {
           ))}
         </div>
 
-        <article className="mt-5 overflow-hidden rounded-2xl border border-zinc-800/90 bg-zinc-900/30 p-6 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-8">
+        {/* Enterprise banner */}
+        <article
+          className="mt-5 overflow-hidden rounded-2xl border p-6 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-8"
+          style={{ borderColor: "var(--stroke)", background: "var(--surface-1)", boxShadow: "var(--shadow-1)" }}
+        >
           <div className="max-w-xl">
-            <h3 className="text-lg font-semibold tracking-tight text-white sm:text-xl">Enterprise</h3>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            <h3 className="text-lg font-semibold tracking-tight sm:text-xl" style={{ color: "var(--fg)" }}>
+              Enterprise
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
               Fleet programs, TMCs, and partners: SSO, audit-friendly workflows, custom SLAs, invoicing, and integrations.
               We&apos;ll align limits and security with how you operate.
             </p>
           </div>
           <Link
             href="mailto:sales@reroute.ai?subject=ReRoute%20Enterprise"
-            className="mt-6 inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10 sm:mt-0"
+            className="mt-6 inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-full border px-6 text-sm font-semibold transition hover:opacity-90 sm:mt-0"
+            style={{
+              borderColor: "var(--stroke-strong)",
+              background: "var(--surface-1)",
+              color: "var(--fg)",
+            }}
           >
             Contact sales
           </Link>
         </article>
 
-        <div className="mt-10 flex flex-col items-center gap-2 border-t border-zinc-800/80 pt-8 text-center sm:mt-12">
-          <p className="max-w-2xl text-xs leading-relaxed text-zinc-500 sm:text-sm">
+        {/* Legal footnote */}
+        <div className="mt-10 flex flex-col items-center gap-2 border-t pt-8 text-center sm:mt-12" style={{ borderColor: "var(--stroke)" }}>
+          <p className="max-w-2xl text-xs leading-relaxed sm:text-sm" style={{ color: "var(--subtle)" }}>
             Cancel anytime on paid plans · No card required for Starter · Security & DPA details available on request
           </p>
-          <p className="text-xs text-zinc-600">
+          <p className="text-xs" style={{ color: "var(--subtle)", opacity: 0.65 }}>
             All amounts in INR · illustrative launch targets · taxes extra as applicable · prices may change.
           </p>
         </div>

@@ -4,14 +4,15 @@ import { cn } from "@/lib/cn";
 
 const variants = {
   primary:
-    "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 focus-visible:ring-emerald-400/50 disabled:opacity-50",
+    "bg-[color:var(--primary)] text-[color:var(--bg)] hover:bg-[color:var(--primary-strong)] focus-visible:ring-[color:var(--primary-soft)] disabled:opacity-50",
   secondary:
-    "border border-zinc-700 bg-zinc-800/80 text-zinc-100 hover:bg-zinc-800 focus-visible:ring-zinc-500/40 disabled:opacity-50",
-  ghost: "text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 focus-visible:ring-zinc-500/40 disabled:opacity-50",
+    "border border-[color:var(--stroke)] bg-[color:var(--surface-1)] text-[color:var(--fg)] hover:bg-[color:var(--surface-2)] focus-visible:ring-[color:var(--primary-soft)] disabled:opacity-50",
+  ghost:
+    "text-[color:var(--muted)] hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)] focus-visible:ring-[color:var(--primary-soft)] disabled:opacity-50",
   danger:
-    "bg-red-500/90 text-white hover:bg-red-500 focus-visible:ring-red-400/50 disabled:opacity-50",
+    "bg-[color:var(--danger)] text-white hover:brightness-110 focus-visible:ring-[color:color-mix(in_oklab,var(--danger),transparent_65%)] disabled:opacity-50",
   dangerGhost:
-    "border border-red-500/40 text-red-300 hover:bg-red-500/10 focus-visible:ring-red-400/40 disabled:opacity-50",
+    "border border-[color:color-mix(in_oklab,var(--danger),transparent_55%)] text-[color:var(--danger)] hover:bg-[color:color-mix(in_oklab,var(--danger),transparent_88%)] focus-visible:ring-[color:color-mix(in_oklab,var(--danger),transparent_70%)] disabled:opacity-50",
 } as const;
 
 export type ButtonVariant = keyof typeof variants;
@@ -32,7 +33,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type="button"
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-offset-zinc-950",
+        "inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-offset-[color:var(--bg)]",
         variants[variant],
         className,
       )}

@@ -30,11 +30,17 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-emerald-500/10 text-emerald-200 ring-1 ring-emerald-500/20"
-                  : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100",
+                  ? "bg-[color:var(--primary-soft)] text-[color:var(--fg)] ring-1 ring-[color:var(--stroke)]"
+                  : "text-[color:var(--subtle)] hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)]",
               )}
             >
-              <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+              <Icon
+                className={cn(
+                  "h-4 w-4 shrink-0 opacity-80",
+                  active && "text-[color:var(--primary)] opacity-100",
+                )}
+                aria-hidden
+              />
               {label}
             </Link>
           </li>
@@ -51,7 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-1 items-center justify-center gap-2 bg-zinc-950 text-sm text-zinc-500">
-        <Loader2 className="h-5 w-5 animate-spin text-emerald-500/70" aria-hidden />
+        <Loader2 className="h-5 w-5 animate-spin text-[color:var(--primary)]" aria-hidden />
         Loading workspace…
       </div>
     );
@@ -64,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           onClick={() => void reload()}
-          className="text-sm font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+          className="text-sm font-medium text-[color:var(--primary)] underline underline-offset-2 hover:text-[color:var(--primary)]"
         >
           Retry
         </button>
@@ -79,35 +85,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const userLabel = user.full_name?.trim() ? user.full_name : user.email;
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-zinc-950 md:flex-row">
-      <aside className="hidden shrink-0 border-b border-zinc-800 bg-zinc-950 light:border-zinc-200 light:bg-zinc-50 md:flex md:w-56 md:flex-col md:border-b-0 md:border-r">
-        <div className="flex h-14 items-center border-b border-zinc-800 px-4">
+    <div className="flex min-h-screen flex-1 flex-col bg-[color:var(--bg)] md:flex-row">
+      <aside className="hidden shrink-0 border-b border-[color:var(--stroke)] bg-[color:var(--bg)] md:flex md:w-56 md:flex-col md:border-b-0 md:border-r">
+        <div className="flex h-14 items-center border-b border-[color:var(--stroke)] px-4">
           <Link
             href="/dashboard"
-            className="font-serif text-base font-semibold tracking-tight text-zinc-100 light:text-zinc-900"
+            className="font-serif text-base font-semibold tracking-tight text-[color:var(--fg)]"
             style={{ fontFamily: "var(--tg-playfair), Georgia, serif" }}
           >
-            ReRoute <em className="not-italic text-emerald-400/90">AI</em>
+            ReRoute <em className="not-italic text-[color:var(--primary)]">AI</em>
           </Link>
           <ThemeToggle className="ml-auto" />
         </div>
         <nav className="flex-1 p-3" aria-label="Main">
           <NavLinks />
         </nav>
-        <div className="border-t border-zinc-800 p-3">
-          <p className="truncate px-1 text-xs text-zinc-500" title={user.email}>
+        <div className="border-t border-[color:var(--stroke)] p-3">
+          <p className="truncate px-1 text-xs text-[color:var(--subtle)]" title={user.email}>
             {userLabel}
           </p>
           <Link
             href="/settings"
-            className="mt-1 block truncate rounded-lg px-3 py-1.5 text-left text-xs font-medium text-emerald-400/90 hover:bg-zinc-900 hover:text-emerald-300"
+            className="mt-1 block truncate rounded-lg px-3 py-1.5 text-left text-xs font-medium text-[color:var(--primary)] hover:bg-[color:var(--surface-1)] hover:text-[color:var(--primary-strong)]"
           >
             Account settings
           </Link>
           <button
             type="button"
             onClick={logout}
-            className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+            className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[color:var(--subtle)] hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)]"
           >
             <LogOut className="h-4 w-4 shrink-0" aria-hidden />
             Log out
@@ -116,8 +122,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-950 px-3 py-2 light:border-zinc-200 light:bg-white md:hidden">
-          <span className="shrink-0 font-semibold text-zinc-100 light:text-zinc-900">ReRoute AI</span>
+        <header className="flex items-center gap-2 border-b border-[color:var(--stroke)] bg-[color:var(--bg)] px-3 py-2 md:hidden">
+          <span className="shrink-0 font-semibold text-[color:var(--fg)]">ReRoute AI</span>
           <ThemeToggle />
           <nav className="flex flex-1 justify-end gap-1 overflow-x-auto" aria-label="Main">
             {nav.map(({ href, label }) => {
@@ -128,7 +134,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={href}
                   className={cn(
                     "shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium",
-                    active ? "bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-500/25" : "text-zinc-400",
+                    active
+                      ? "bg-[color:var(--primary-soft)] text-[color:var(--fg)] ring-1 ring-[color:var(--stroke)]"
+                      : "text-[color:var(--subtle)]",
                   )}
                 >
                   {label}
@@ -137,7 +145,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
         </header>
-        <main className="min-h-0 flex-1 overflow-auto bg-zinc-950 light:bg-zinc-50">{children}</main>
+        <main className="rr-hero-sky min-h-0 flex-1 overflow-auto bg-[color:var(--bg)]">{children}</main>
       </div>
     </div>
   );

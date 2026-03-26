@@ -72,7 +72,7 @@ export default function SignupPage() {
       footer={
         <>
           Already registered?{" "}
-          <Link href="/login" className="font-semibold text-emerald-400 hover:text-emerald-300">
+          <Link href="/login" className="font-semibold text-[color:var(--primary)] hover:text-[color:var(--primary)]">
             Sign in
           </Link>
         </>
@@ -138,7 +138,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-emerald-500/15 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-55"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[color:var(--primary)] py-3.5 text-sm font-semibold text-white shadow-lg shadow-md transition hover:bg-[color:var(--primary)] disabled:cursor-not-allowed disabled:opacity-55"
         >
           {loading ? (
             <>

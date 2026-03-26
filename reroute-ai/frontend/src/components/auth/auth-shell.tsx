@@ -4,6 +4,7 @@ import { Check, Plane } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const authInputClass = cn(
   "mt-2 w-full rounded-xl border border-zinc-700/80 bg-zinc-950/60 px-4 py-3 text-sm text-zinc-100 shadow-inner shadow-black/20",
@@ -28,7 +29,7 @@ const highlights = [
 
 export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
   return (
-    <div className="flex min-h-dvh flex-col bg-zinc-950 lg:flex-row">
+    <div className="flex min-h-dvh flex-col bg-zinc-950 light:bg-zinc-100 lg:flex-row">
       {/* Brand panel */}
       <aside className="relative flex min-h-[38vh] flex-col justify-between overflow-hidden lg:min-h-dvh lg:w-[min(44%,520px)] lg:shrink-0 xl:w-[min(42%,560px)]">
         <div className="absolute inset-0">
@@ -83,6 +84,9 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
       {/* Form panel */}
       <main className="flex flex-1 flex-col justify-center px-4 py-10 sm:px-8 sm:py-14 lg:px-12 lg:py-16">
         <div className="mx-auto w-full max-w-[400px]">
+          <div className="mb-4 flex justify-end">
+            <ThemeToggle />
+          </div>
           <div className="rounded-2xl border border-zinc-800/90 bg-zinc-900/35 p-8 shadow-2xl shadow-black/30 backdrop-blur-md ring-1 ring-white/[0.04] sm:p-9">
             <h1 className="text-2xl font-semibold tracking-tight text-white">{title}</h1>
             <p className="mt-2 text-sm leading-relaxed text-zinc-400">{subtitle}</p>

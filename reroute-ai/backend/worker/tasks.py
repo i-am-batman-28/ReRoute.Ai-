@@ -18,12 +18,16 @@ def ping() -> str:
 
 @celery_app.task(name="reroute.monitor.enqueue_cycle")
 def enqueue_monitor_cycle() -> dict:
-    """
-    Beat hook: future home for per-user / per-trip monitor fan-out.
-    v1: no-op success so infra can be validated (redis + worker + beat).
-    """
-    logger.info("monitor.enqueue_cycle_stub")
-    return {"ok": True, "detail": "stub — wire trip scans and agent checks here"}
+    """Beat hook: flight + weather scan per trip; writes disruption_events (monitor_scan / monitor_alert)."""
+    from database import get_session_factory
+    from service.monitor_cycle_service import run_monitor_cycle
+
+    async def _run() -> dict:
+        factory = get_session_factory()
+        async with factory() as session:
+            return await run_monitor_cycle(session=session)
+
+    return asyncio.run(_run())
 
 
 @celery_app.task(name="reroute.email.send_resend_html", ignore_result=True)

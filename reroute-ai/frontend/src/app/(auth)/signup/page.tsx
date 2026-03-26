@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
-import { UserPlus } from "lucide-react";
-
-import { Grainient } from "@/components/ui/grainient";
+import { AuthShell, authInputClass, authLabelClass } from "@/components/auth/auth-shell";
 import { getApiBase } from "@/lib/api-base";
-import { setStoredToken } from "@/lib/auth-token";
+import { clearStoredToken } from "@/lib/auth-token";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -44,18 +43,19 @@ export default function SignupPage() {
         return;
       }
 
+      clearStoredToken();
       const loginRes = await fetch(`${getApiBase()}/users/login`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember_me: true }),
       });
       const loginData = (await loginRes.json().catch(() => ({}))) as { access_token?: string };
       if (!loginRes.ok || !loginData.access_token) {
-        setError("Account created — please log in.");
-        router.push("/");
+        setError("Account created — please sign in.");
+        router.push("/login");
         return;
       }
-      setStoredToken(loginData.access_token);
       router.push("/dashboard");
       router.refresh();
     } catch {
@@ -66,83 +66,101 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <Grainient />
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12 sm:px-8">
-        <div className="w-full max-w-[380px] rounded-2xl border border-white/60 bg-white/70 p-8 shadow-xl backdrop-blur-xl ring-1 ring-emerald-950/[0.04] sm:p-10">
-          <h1 className="flex items-center justify-center gap-2 text-center text-xl font-semibold text-zinc-900">
-            <UserPlus className="h-6 w-6 text-emerald-700" aria-hidden />
-            Create account
-          </h1>
-          <p className="mt-1 text-center text-sm text-zinc-500">ReRoute.AI</p>
-
-          <form className="mt-6 space-y-5" onSubmit={onSubmit}>
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-zinc-700">
-                Full name <span className="font-normal text-zinc-400">(optional)</span>
-              </label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                autoComplete="name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-zinc-200/90 bg-white/80 px-4 py-3 text-zinc-900 outline-none transition duration-300 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-400/25"
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-zinc-200/90 bg-white/80 px-4 py-3 text-zinc-900 outline-none transition duration-300 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-400/25"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
-                Password <span className="font-normal text-zinc-400">(min 8 characters)</span>
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-zinc-200/90 bg-white/80 px-4 py-3 text-zinc-900 outline-none transition duration-300 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-400/25"
-              />
-            </div>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-emerald-950 py-3.5 text-sm font-semibold text-white shadow-md transition duration-300 hover:scale-105 hover:shadow-lg active:scale-[1.02] disabled:pointer-events-none disabled:opacity-50"
-            >
-              {loading ? "Creating…" : "Sign up"}
-            </button>
-          </form>
-
-          <p className="mt-8 text-center text-sm text-zinc-500">
-            Already have an account?{" "}
-            <Link
-              href="/"
-              className="font-medium text-emerald-900 underline decoration-emerald-900/30 underline-offset-4 hover:text-emerald-800"
-            >
-              Log in
-            </Link>
-          </p>
+    <AuthShell
+      title="Create your account"
+      subtitle="Start monitoring trips and running recovery workflows in minutes."
+      footer={
+        <>
+          Already registered?{" "}
+          <Link href="/login" className="font-semibold text-emerald-400 hover:text-emerald-300">
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form className="space-y-5" onSubmit={onSubmit}>
+        <div>
+          <label htmlFor="signup-name" className={authLabelClass}>
+            Full name <span className="font-normal normal-case tracking-normal text-zinc-600">(optional)</span>
+          </label>
+          <input
+            id="signup-name"
+            name="fullName"
+            type="text"
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Alex Morgan"
+            className={authInputClass}
+          />
         </div>
-      </div>
-    </div>
+        <div>
+          <label htmlFor="signup-email" className={authLabelClass}>
+            Work email
+          </label>
+          <input
+            id="signup-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            className={authInputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="signup-password" className={authLabelClass}>
+            Password
+          </label>
+          <input
+            id="signup-password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="At least 8 characters"
+            className={authInputClass}
+          />
+          <p className="mt-1.5 text-xs text-zinc-600">Minimum 8 characters. Use a unique password you don’t reuse elsewhere.</p>
+        </div>
+
+        {error ? (
+          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-emerald-500/15 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-55"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              Creating account…
+            </>
+          ) : (
+            "Create account"
+          )}
+        </button>
+
+        <p className="text-center text-xs leading-relaxed text-zinc-600">
+          By continuing you agree to use ReRoute in line with your organization’s policies. We never sell your itinerary
+          data.
+        </p>
+      </form>
+
+      <p className="mt-6 text-center">
+        <Link href="/" className="text-sm text-zinc-500 transition hover:text-zinc-300">
+          ← Back to home
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

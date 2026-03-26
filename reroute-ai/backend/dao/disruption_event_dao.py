@@ -64,6 +64,15 @@ class DisruptionEventDAO(BaseDAO):
         )
         return result.scalar_one_or_none()
 
+    async def latest_for_trip_by_kind(self, *, trip_id: str, kind: str) -> DisruptionEvent | None:
+        result = await self.session.execute(
+            select(DisruptionEvent)
+            .where(DisruptionEvent.trip_id == trip_id, DisruptionEvent.kind == kind)
+            .order_by(DisruptionEvent.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def latest_per_trip_for_user(
         self, *, user_id: str, trip_ids: list[str]
     ) -> dict[str, DisruptionEvent | None]:

@@ -35,6 +35,10 @@ def _make_celery() -> Celery:
                 "task": "reroute.agent.release_stale_applying",
                 "schedule": crontab(minute="*/5"),
             },
+            "monitor-cycle": {
+                "task": "reroute.monitor.enqueue_cycle",
+                "schedule": crontab(minute="*/10"),
+            },
         },
     )
     return app

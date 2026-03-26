@@ -35,6 +35,17 @@ class TripDAO(BaseDAO):
         result = await self.session.execute(q)
         return list(result.scalars().all())
 
+    async def list_all(self, *, offset: int = 0, limit: int = 50) -> list[Trip]:
+        """Paginated list of all trips (monitor / background jobs)."""
+        q = (
+            select(Trip)
+            .order_by(Trip.updated_at.desc())
+            .offset(max(offset, 0))
+            .limit(min(max(limit, 1), 500))
+        )
+        result = await self.session.execute(q)
+        return list(result.scalars().all())
+
     async def create(
         self,
         *,

@@ -38,7 +38,7 @@ export default function MonitorPage() {
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center gap-2 text-sm text-zinc-500">
-        <Loader2 className="h-5 w-5 animate-spin text-emerald-500/70" aria-hidden />
+        <Loader2 className="h-5 w-5 animate-spin text-[color:var(--primary)]" aria-hidden />
         Loading monitor…
       </div>
     );
@@ -51,7 +51,7 @@ export default function MonitorPage() {
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-4 text-sm font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+          className="mt-4 text-sm font-medium text-[color:var(--primary)] underline underline-offset-2 hover:text-[color:var(--primary)]"
         >
           Retry
         </button>
@@ -91,7 +91,7 @@ export default function MonitorPage() {
       {trips.length === 0 ? (
         <p className="mt-10 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/30 px-4 py-12 text-center text-sm text-zinc-500">
           No monitored trips yet.{" "}
-          <Link href="/trips" className="font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300">
+          <Link href="/trips" className="font-medium text-[color:var(--primary)] underline underline-offset-2 hover:text-[color:var(--primary)]">
             Add a trip
           </Link>
           .

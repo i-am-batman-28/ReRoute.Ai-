@@ -71,7 +71,7 @@ export default function TripWorkspacePage() {
     return (
       <div className="px-4 py-16 text-center text-sm text-zinc-500">
         Invalid trip.{" "}
-        <Link href="/trips" className="font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300">
+        <Link href="/trips" className="font-medium underline underline-offset-2 hover:opacity-80" style={{ color: "var(--primary)" }}>
           Back to trips
         </Link>
       </div>
@@ -127,7 +127,7 @@ export default function TripWorkspacePage() {
               type="button"
               disabled={deleting}
               onClick={() => void deleteTrip()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/35 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/20 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/35 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-[color:var(--danger)] hover:bg-red-500/20 disabled:opacity-50"
             >
               {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Trash2 className="h-3.5 w-3.5" aria-hidden />}
               Delete trip

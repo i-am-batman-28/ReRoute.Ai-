@@ -37,7 +37,7 @@ export default function DashboardOverviewPage() {
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center gap-2 text-sm text-zinc-500">
-        <Loader2 className="h-5 w-5 animate-spin text-emerald-500/70" aria-hidden />
+        <Loader2 className="h-5 w-5 animate-spin text-[color:var(--primary)]" aria-hidden />
         Loading overview…
       </div>
     );
@@ -50,7 +50,7 @@ export default function DashboardOverviewPage() {
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-4 text-sm font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+          className="mt-4 text-sm font-medium text-[color:var(--primary)] underline underline-offset-2 hover:text-[color:var(--primary)]"
         >
           Retry
         </button>

@@ -58,25 +58,25 @@ type LogLine = {
 const INITIAL_LOGS: LogLine[] = [
   { id: "1", time: "07:31", dot: "r", children: (
     <>
-      <span className="font-medium text-red-400">Disruption:</span> <span className="text-zinc-200">6E-204</span> cancelled by airline
+      <span className="font-medium text-[color:var(--danger)]">Disruption:</span> <span className="text-zinc-200">6E-204</span> cancelled by airline
     </>
   ) },
   { id: "2", time: "07:31", dot: "b", children: <>Cascade check initiated for trip <span className="text-zinc-200">Q4-032</span></> },
   { id: "3", time: "07:32", dot: "b", children: <>Called <span className="text-zinc-200">search_flights</span>(DEL, BLR, Mar 25)</> },
   { id: "4", time: "07:32", dot: "b", children: <>Called <span className="text-zinc-200">search_trains</span>(NDLS, SBC, Mar 25)</> },
   { id: "5", time: "07:32", dot: "b", children: <>Called <span className="text-zinc-200">search_multimodal</span>(DEL → BLR via HYD)</> },
-  { id: "6", time: "07:33", dot: "g", children: <><span className="font-medium text-emerald-400">3 alternatives found.</span> Scored by ETA, cost, preference</> },
+  { id: "6", time: "07:33", dot: "g", children: <><span className="font-medium text-[color:var(--primary)]">3 alternatives found.</span> Scored by ETA, cost, preference</> },
   { id: "7", time: "07:33", dot: "b", children: <>Called <span className="text-zinc-200">check_hotel_policy</span>(TAJ-BLR-8821)</> },
-  { id: "8", time: "07:33", dot: "g", children: <><span className="font-medium text-emerald-400">Hotel updated.</span> Late check-in confirmed 00:30</> },
+  { id: "8", time: "07:33", dot: "g", children: <><span className="font-medium text-[color:var(--primary)]">Hotel updated.</span> Late check-in confirmed 00:30</> },
   { id: "9", time: "07:33", dot: "a", children: <>Calendar event <span className="text-zinc-200">&quot;9 AM BLR meeting&quot;</span> flagged at-risk</> },
   { id: "10", time: "07:34", dot: "b", children: <>Called <span className="text-zinc-200">check_compensation</span>(6E-204, country: IN)</> },
-  { id: "11", time: "07:34", dot: "g", children: <><span className="font-medium text-emerald-400">DGCA eligible.</span> ₹10,000 claim document ready</> },
+  { id: "11", time: "07:34", dot: "g", children: <><span className="font-medium text-[color:var(--primary)]">DGCA eligible.</span> ₹10,000 claim document ready</> },
   { id: "12", time: "07:34", dot: "b", children: <>Called <span className="text-zinc-200">suggest_lounge</span>(DEL, T1D, gate B)</> },
-  { id: "13", time: "07:34", dot: "g", children: <><span className="font-medium text-emerald-400">Dashboard ready.</span> Awaiting rebooking confirmation</> },
+  { id: "13", time: "07:34", dot: "g", children: <><span className="font-medium text-[color:var(--primary)]">Dashboard ready.</span> Awaiting rebooking confirmation</> },
 ];
 
 const logDotClass: Record<LogDot, string> = {
-  g: "bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.22)]",
+  g: "bg-[color:var(--primary)] shadow-[0_0_0_3px_rgba(52,211,153,0.22)]",
   a: "bg-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.2)]",
   r: "bg-red-400 shadow-[0_0_0_3px_rgba(248,113,113,0.22)]",
   b: "bg-sky-400 shadow-[0_0_0_3px_rgba(56,189,248,0.2)]",
@@ -165,7 +165,7 @@ function buildApiLogs(events: DisruptionEventPublic[], toolTrace: string[] | und
       dot: eventDot(ev.kind),
       children: (
         <>
-          <span className="font-medium text-red-400">{ev.kind}</span>
+          <span className="font-medium text-[color:var(--danger)]">{ev.kind}</span>
           {ev.disruption_type ? <> · {ev.disruption_type}</> : null}
         </>
       ),
@@ -613,7 +613,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
       setRippleOpen(true);
       addLog("g", (
         <>
-          <span className="font-medium text-emerald-400">Confirmed:</span> <span className="text-zinc-200">{name}</span> — updating itinerary
+          <span className="font-medium text-[color:var(--primary)]">Confirmed:</span> <span className="text-zinc-200">{name}</span> — updating itinerary
         </>
       ));
       const detailParts = [res.message];
@@ -630,7 +630,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     setRippleOpen(true);
     addLog("g", (
       <>
-        <span className="font-medium text-emerald-400">Confirmed:</span> <span className="text-zinc-200">{name}</span> — updating itinerary
+        <span className="font-medium text-[color:var(--primary)]">Confirmed:</span> <span className="text-zinc-200">{name}</span> — updating itinerary
       </>
     ));
     pushToast(<Check aria-hidden />, "Booking confirmed", `${name} selected. Itinerary updated across all segments.`);
@@ -639,11 +639,11 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
   function resolveMeeting(action: "moved" | "kept") {
     if (action === "moved") {
       setMeetingStatus("moved");
-      addLog("g", <>Calendar updated. <span className="font-medium text-emerald-400">3 attendees notified.</span></>);
+      addLog("g", <>Calendar updated. <span className="font-medium text-[color:var(--primary)]">3 attendees notified.</span></>);
       pushToast(<Calendar aria-hidden />, "Meeting rescheduled", "9 AM moved to 11 AM. Invite sent to 3 attendees.");
     } else {
       setMeetingStatus("kept");
-      addLog("a", <><span className="font-medium text-amber-300">Meeting kept at 9 AM.</span> Tight but feasible.</>);
+      addLog("a", <><span className="font-medium text-[color:var(--warn)]">Meeting kept at 9 AM.</span> Tight but feasible.</>);
     }
   }
 
@@ -654,7 +654,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
       addLog("g", <span className="text-zinc-300">Compensation: marked as submitted in this workspace (no live claim API).</span>);
       pushToast(<IndianRupee aria-hidden />, "Recorded", "This is a local confirmation only — real claims go through your airline or regulator process.", "money");
     } else {
-      addLog("g", <><span className="font-medium text-emerald-400">Demo claim filed.</span> Illustration only.</>);
+      addLog("g", <><span className="font-medium text-[color:var(--primary)]">Demo claim filed.</span> Illustration only.</>);
       pushToast(<IndianRupee aria-hidden />, "Demo claim", "Illustration only — not a real filing.", "money");
     }
   }
@@ -717,14 +717,14 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--primary)] opacity-40" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--primary)]" />
                 </span>
                 {segmentPulseLabel}
               </div>
               <Link
                 href="/trips"
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400"
+                className="inline-flex items-center gap-2 rounded-lg bg-[color:var(--primary)] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[color:var(--primary)]"
               >
                 <Plus size={15} aria-hidden />
                 New trip
@@ -735,17 +735,17 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 pb-6">
             <div className="flex flex-wrap items-baseline gap-3">
               <span className="font-serif text-xl font-semibold tracking-tight text-zinc-100" style={{ fontFamily: "var(--tg-playfair), Georgia, serif" }}>
-                ReRoute <em className="not-italic text-emerald-400">AI</em>
+                ReRoute <em className="not-italic text-[color:var(--primary)]">AI</em>
               </span>
-              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+              <span className="rounded-full border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--primary)]">
                 Agent active
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--primary)] opacity-40" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--primary)]" />
                 </span>
                 {segmentPulseLabel}
               </div>
@@ -765,7 +765,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </button>
               <Link
                 href="/trips"
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400"
+                className="inline-flex items-center gap-2 rounded-lg bg-[color:var(--primary)] px-3 py-2 text-sm font-semibold text-white hover:bg-[color:var(--primary)]"
               >
                 <Plus size={15} aria-hidden />
                 New Trip
@@ -776,7 +776,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
 
         {bridge && bridge.state === "loading" ? (
           <div className="flex flex-col items-center justify-center gap-4 py-24">
-            <Loader2 className="h-9 w-9 shrink-0 animate-spin text-emerald-500/80" aria-hidden />
+            <Loader2 className="h-9 w-9 shrink-0 animate-spin text-[color:var(--primary)]" aria-hidden />
             <p className="text-sm text-zinc-500">Loading trip data…</p>
             <div className="grid w-full max-w-2xl gap-3 sm:grid-cols-2">
               <div className="h-24 animate-pulse rounded-xl bg-zinc-900/60" />
@@ -794,7 +794,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
             </p>
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-[color:var(--primary)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[color:var(--primary)] disabled:opacity-50"
               disabled={bridge.creatingDemo}
               onClick={() => void bridge.createDemoTrip()}
             >
@@ -806,10 +806,10 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
 
         {bridge && bridge.state === "error" ? (
           <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-red-500/25 bg-red-500/5 px-6 py-16 text-center">
-            <p className="text-sm text-red-300">{bridge.errorMessage ?? "Something went wrong."}</p>
+            <p className="text-sm text-[color:var(--danger)]">{bridge.errorMessage ?? "Something went wrong."}</p>
             <button
               type="button"
-              className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400"
+              className="rounded-lg bg-[color:var(--primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[color:var(--primary)]"
               onClick={() => void bridge.refresh()}
             >
               Retry
@@ -822,7 +822,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
             {bannerVisible && !isApi ? (
               <div className="mb-6 flex flex-col gap-4 rounded-xl border border-red-500/25 bg-red-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-300" aria-hidden>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-[color:var(--danger)]" aria-hidden>
                     <AlertTriangle className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
@@ -855,7 +855,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
             {bannerVisible && isApiReady && bridge && apiBanner ? (
               <div className="mb-6 flex flex-col gap-4 rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-200" aria-hidden>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-[color:var(--warn)]" aria-hidden>
                     <AlertTriangle className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
@@ -873,7 +873,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   </button>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 rounded-lg bg-amber-500/90 px-3 py-2 text-xs font-semibold text-zinc-950 hover:bg-amber-400"
+                    className="inline-flex items-center gap-1 rounded-lg bg-amber-500/90-[#451a03] hover:bg-amber-400"
                     onClick={scrollToOpts}
                   >
                     View options
@@ -889,7 +889,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                 {!isApiReady ? (
                   <>
                     <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Active trip · Mar 25–28, 2026</div>
-                    <div className="mt-2 font-serif text-3xl font-semibold tracking-tight text-zinc-50" style={{ fontFamily: "var(--tg-playfair), Georgia, serif" }}>
+                    <div className="mt-2 text-3xl font-semibold tracking-tight text-white">
                       Business — Q4 Review Circuit
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-sm text-zinc-400">
@@ -908,7 +908,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                 ) : bridge?.detail ? (
                   <>
                     <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">{formatTripEyebrow(bridge.detail)}</div>
-                    <div className="mt-2 font-serif text-3xl font-semibold tracking-tight text-zinc-50" style={{ fontFamily: "var(--tg-playfair), Georgia, serif" }}>
+                    <div className="mt-2 text-3xl font-semibold tracking-tight text-white">
                       {bridge.detail.trip.title?.trim() || "Untitled trip"}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-sm text-zinc-400">
@@ -972,9 +972,9 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         <p
                           className={cn(
                             "max-w-2xl flex-1 text-sm leading-relaxed transition-colors duration-200",
-                            tripStatusLine.tone === "active" && "text-emerald-300/95",
+                            tripStatusLine.tone === "active" && "text-[color:var(--primary)]",
                             tripStatusLine.tone === "ok" && "text-zinc-300",
-                            tripStatusLine.tone === "warn" && "text-amber-200/90",
+                            tripStatusLine.tone === "warn" && "text-[color:var(--warn)]/90",
                             tripStatusLine.tone === "muted" && "text-zinc-500",
                           )}
                           role="status"
@@ -1000,29 +1000,29 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               <div className="flex flex-wrap gap-2">
                 {!isApiReady ? (
                   <>
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-red-500/35 bg-red-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-red-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-red-500/35 bg-red-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--danger)]">
                       1 Cancelled
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-200">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--warn)]">
                       1 Delayed
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                       1 On track
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                       Claim ready
                     </span>
                   </>
                 ) : bridge ? (
                   <>
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-200">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--warn)]">
                       Phase: {bridge.proposal?.phase ?? "idle"}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-300">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                       Trip loaded
                     </span>
                     {bridge.proposal?.ranked_options?.length ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-300">
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                         {bridge.proposal.ranked_options.length} options
                       </span>
                     ) : null}
@@ -1099,13 +1099,13 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         className={cn(
                           "inline-flex min-h-10 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition duration-200",
                           active &&
-                            "border-emerald-400/50 bg-emerald-500/15 text-emerald-100 shadow-[0_0_0_1px_rgba(52,211,153,0.2)] ring-2 ring-emerald-500/25",
-                          !active && done && enabled && "border-emerald-500/15 bg-zinc-900/50 text-zinc-500",
+                            "border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--bg)] shadow-[0_0_0_1px_rgba(52,211,153,0.2)] ring-2 ring-[color:var(--primary-soft)]",
+                          !active && done && enabled && "border-[color:var(--primary-soft)] bg-zinc-900/50 text-zinc-500",
                           !active && !done && enabled && "border-zinc-800/80 bg-zinc-900/30 text-zinc-300 hover:bg-zinc-900/60",
                           !enabled && "cursor-not-allowed border-zinc-800/60 bg-zinc-950/40 opacity-40",
                         )}
                       >
-                        {done && !active ? <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500/90" aria-hidden /> : null}
+                        {done && !active ? <Check className="h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" aria-hidden /> : null}
                         <span>{label}</span>
                       </button>
                     );
@@ -1150,7 +1150,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                           <span className="text-xs text-zinc-600">→</span>
                           <span>Bengaluru</span>
                         </div>
-                        <span className="rounded-md border border-red-500/35 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-300">Cancelled</span>
+                        <span className="rounded-md border border-red-500/35 bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--danger)]">Cancelled</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
                         <span className="text-xs text-zinc-400 [&_strong]:font-medium [&_strong]:text-zinc-200">
@@ -1159,8 +1159,8 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         <span className="text-xs text-zinc-400 [&_strong]:font-medium [&_strong]:text-zinc-200">IndiGo · Crew unavailability</span>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-                        <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-200">Agent: 3 alternatives found</span>
-                        <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">Hotel notified</span>
+                        <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--warn)]">Agent: 3 alternatives found</span>
+                        <span className="rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--primary)]">Hotel notified</span>
                       </div>
                     </div>
                     <div className="shrink-0 self-start">
@@ -1181,11 +1181,11 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                           <span className="text-xs text-zinc-600">→</span>
                           <span>Bengaluru</span>
                         </div>
-                        <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-200">Delayed +2h</span>
+                        <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--warn)]">Delayed +2h</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
                         <span className="text-xs text-zinc-400 [&_strong]:font-medium [&_strong]:text-zinc-200">
-                          Original: <span className="text-zinc-600 line-through">10:15</span> <span className="font-semibold text-amber-300">12:15</span>
+                          Original: <span className="text-zinc-600 line-through">10:15</span> <span className="font-semibold text-[color:var(--warn)]">12:15</span>
                         </span>
                         <span className="text-xs text-zinc-400 [&_strong]:font-medium [&_strong]:text-zinc-200">
                           Gate: <strong>B-14</strong>
@@ -1203,12 +1203,12 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       </div>
                     </div>
                     <div className="shrink-0 self-start">
-                      <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-200">Alt · option 1</span>
+                      <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--warn)]">Alt · option 1</span>
                     </div>
                   </div>
 
                   <div className="flex gap-4 border-t border-zinc-800/60 px-4 py-4 first:border-t-0 hover:bg-zinc-800/15">
-                    <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.2)]" />
+                    <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[color:var(--primary)] shadow-[0_0_0_3px_rgba(52,211,153,0.2)]" />
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs italic text-zinc-500">AI-657</span>
@@ -1217,7 +1217,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                           <span className="text-xs text-zinc-600">→</span>
                           <span>Mumbai</span>
                         </div>
-                        <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">On track</span>
+                        <span className="rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--primary)]">On track</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
                         <span className="text-xs text-zinc-400 [&_strong]:font-medium [&_strong]:text-zinc-200">
@@ -1231,12 +1231,12 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                           <span>Confirmed</span>
                         </div>
                         <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
-                          <div className="h-full rounded-full bg-emerald-500/80 transition-all duration-500" style={{ width: "100%" }} />
+                          <div className="h-full rounded-full bg-[color:var(--primary-soft)] transition-all duration-500" style={{ width: "100%" }} />
                         </div>
                       </div>
                     </div>
                     <div className="shrink-0 self-start">
-                      <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">
+                      <span className="inline-flex items-center gap-1 rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--primary)]">
                         <Check aria-hidden />
                         Confirmed
                       </span>
@@ -1246,7 +1246,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               ) : sortedLegs.length > 0 ? (
                 sortedLegs.map((leg) => (
                   <div key={leg.id} className="flex gap-4 border-t border-zinc-800/60 px-4 py-4 first:border-t-0 hover:bg-zinc-800/15">
-                    <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.2)]" />
+                    <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[color:var(--primary)] shadow-[0_0_0_3px_rgba(52,211,153,0.2)]" />
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs italic text-zinc-500">{leg.flight_number ?? leg.mode}</span>
@@ -1255,7 +1255,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                           <span className="text-xs text-zinc-600">→</span>
                           <span>{leg.destination_code}</span>
                         </div>
-                        <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">{leg.mode}</span>
+                        <span className="rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--primary)]">{leg.mode}</span>
                       </div>
                       <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
                         <span className="text-xs text-zinc-400 [&_strong]:font-medium [&_strong]:text-zinc-200">
@@ -1274,7 +1274,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                 ))
               ) : primaryFromSnapshot ? (
                 <div className="flex gap-4 border-t border-zinc-800/60 px-4 py-4 first:border-t-0 hover:bg-zinc-800/15">
-                  <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.2)]" />
+                  <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[color:var(--primary)] shadow-[0_0_0_3px_rgba(52,211,153,0.2)]" />
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex flex-wrap items-center gap-2">
                       <span className="font-mono text-xs italic text-zinc-500">{primaryFromSnapshot.flight_number ?? "—"}</span>
@@ -1283,7 +1283,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         <span className="text-xs text-zinc-600">→</span>
                         <span>{primaryFromSnapshot.destination ?? "—"}</span>
                       </div>
-                      <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-200">From snapshot</span>
+                      <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--warn)]">From snapshot</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
                       <span className="text-xs text-zinc-400 [&_strong]:font-medium [&_strong]:text-zinc-200">
@@ -1303,9 +1303,9 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                 <p className="px-4 py-6 text-sm text-zinc-500">No flight legs yet. Trip snapshot is stored — run agent or wait for sync.</p>
               )}
               {isApiReady && bridge && activeStep === "run" && !showSeparateRebookingCard && !bridge.proposing ? (
-                <div className="border-t border-emerald-500/15 bg-gradient-to-b from-emerald-500/[0.07] to-zinc-950/20 px-5 py-5 transition-all duration-300">
+                <div className="border-t border-[color:var(--primary-soft)] bg-gradient-to-b from-[color:var(--primary-soft)] to-transparent px-5 py-5 transition-all duration-300">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/25">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--primary-soft)] text-[color:var(--primary)] ring-1 ring-[color:var(--primary-soft)]">
                       <Plane className="h-5 w-5" aria-hidden />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -1316,15 +1316,15 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       </p>
                       <ul className="mt-3 space-y-2 text-xs text-zinc-400">
                         <li className="flex gap-2">
-                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden />
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" aria-hidden />
                           Multimodal search (flights, trains, mixed legs) scored by ETA and cost
                         </li>
                         <li className="flex gap-2">
-                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden />
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" aria-hidden />
                           Downstream checks (hotels, meetings) summarized in the next step
                         </li>
                         <li className="flex gap-2">
-                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden />
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" aria-hidden />
                           Compensation draft when rules apply
                         </li>
                       </ul>
@@ -1333,7 +1333,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-zinc-950 shadow-md shadow-emerald-500/15 transition hover:bg-emerald-400 disabled:opacity-50"
+                      className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[color:var(--primary)] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-md transition hover:bg-[color:var(--primary)] disabled:opacity-50"
                       disabled={bridge.proposing || bridge.confirming || !bridge.tripId}
                       onClick={() => void bridge.runPropose(null)}
                     >
@@ -1383,7 +1383,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   aria-expanded={cascadeTeaserOpen}
                 >
                   <div className="min-w-0">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-200/90">After you confirm</div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--warn)]/90">After you confirm</div>
                     <p className="mt-1 text-sm text-zinc-200">
                       See how hotels, meetings, and connections may need updates — in plain language below.
                     </p>
@@ -1409,12 +1409,12 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               >
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
                 <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--primary)]" aria-hidden />
                   Rebooking options
                   <span className="ml-1 inline-flex gap-0.5" aria-hidden>
-                    <span className="h-1 w-1 animate-bounce rounded-full bg-emerald-400/80 [animation-delay:-0.2s]" />
-                    <span className="h-1 w-1 animate-bounce rounded-full bg-emerald-400/80 [animation-delay:-0.1s]" />
-                    <span className="h-1 w-1 animate-bounce rounded-full bg-emerald-400/80" />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-[color:var(--primary-soft)] [animation-delay:-0.2s]" />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-[color:var(--primary-soft)] [animation-delay:-0.1s]" />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-[color:var(--primary-soft)]" />
                   </span>
                 </div>
                 <span className="text-xs italic text-zinc-500" style={{ fontFamily: "var(--tg-instrument-serif), Georgia, serif" }}>
@@ -1427,11 +1427,11 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     <div
                       className={cn(
                         "relative flex flex-wrap items-stretch gap-3 p-4",
-                        (!confirmedId || confirmedId === "6e789") && "bg-emerald-500/[0.06] ring-1 ring-inset ring-emerald-500/20",
+                        (!confirmedId || confirmedId === "6e789") && "bg-[color:var(--primary-soft)] ring-1 ring-inset ring-[color:var(--primary-soft)]",
                       )}
                     >
                       {!confirmedId ? (
-                        <div className="absolute right-3 top-3 rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+                        <div className="absolute right-3 top-3 rounded bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[color:var(--primary)]">
                           Best
                         </div>
                       ) : null}
@@ -1450,13 +1450,13 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       </div>
                       <div className="flex shrink-0 flex-col items-end justify-center gap-2">
                         <div className="text-sm font-semibold tabular-nums text-zinc-100">15:30</div>
-                        <div className="text-xs font-medium text-amber-300/90">+2h 15m</div>
+                        <div className="text-xs font-medium text-[color:var(--warn)]/90">+2h 15m</div>
                         <button
                           type="button"
                           className={cn(
                             "inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50",
                             confirmedId === "6e789" || !confirmedId
-                              ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+                              ? "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]"
                               : "border border-zinc-700 font-medium text-zinc-300 hover:bg-zinc-800",
                           )}
                           onClick={() => void confirmOpt("6e789", "6E-789")}
@@ -1481,7 +1481,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     <div
                       className={cn(
                         "relative flex flex-wrap items-stretch gap-3 p-4",
-                        confirmedId === "train" && "bg-emerald-500/[0.06] ring-1 ring-inset ring-emerald-500/20",
+                        confirmedId === "train" && "bg-[color:var(--primary-soft)] ring-1 ring-inset ring-[color:var(--primary-soft)]",
                       )}
                     >
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800/80 text-zinc-300">
@@ -1499,13 +1499,13 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       </div>
                       <div className="flex shrink-0 flex-col items-end justify-center gap-2">
                         <div className="text-sm font-semibold tabular-nums text-zinc-100">+1 day</div>
-                        <div className="text-xs font-medium text-amber-300/90">+26h</div>
+                        <div className="text-xs font-medium text-[color:var(--warn)]/90">+26h</div>
                         <button
                           type="button"
                           className={cn(
                             "inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50",
                             confirmedId === "train"
-                              ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+                              ? "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]"
                               : "border border-zinc-700 font-medium text-zinc-300 hover:bg-zinc-800",
                           )}
                           onClick={() => void confirmOpt("train", "Rajdhani Express")}
@@ -1525,7 +1525,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     <div
                       className={cn(
                         "relative flex flex-wrap items-stretch gap-3 p-4",
-                        confirmedId === "hyd" && "bg-emerald-500/[0.06] ring-1 ring-inset ring-emerald-500/20",
+                        confirmedId === "hyd" && "bg-[color:var(--primary-soft)] ring-1 ring-inset ring-[color:var(--primary-soft)]",
                       )}
                     >
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center gap-0.5 rounded-lg border border-zinc-700 bg-zinc-800/80 text-zinc-300">
@@ -1544,13 +1544,13 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       </div>
                       <div className="flex shrink-0 flex-col items-end justify-center gap-2">
                         <div className="text-sm font-semibold tabular-nums text-zinc-100">14:00</div>
-                        <div className="text-xs font-medium text-amber-300/90">+3h 45m</div>
+                        <div className="text-xs font-medium text-[color:var(--warn)]/90">+3h 45m</div>
                         <button
                           type="button"
                           className={cn(
                             "inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50",
                             confirmedId === "hyd"
-                              ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+                              ? "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]"
                               : "border border-zinc-700 font-medium text-zinc-300 hover:bg-zinc-800",
                           )}
                           onClick={() => void confirmOpt("hyd", "HYD + Cab")}
@@ -1570,12 +1570,12 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                 ) : bridge ? (
                   <>
                     {bridge.proposeError ? (
-                      <p className="border-b border-red-500/20 bg-red-500/5 px-4 py-2 text-sm text-red-300" role="alert">
+                      <p className="border-b border-red-500/20 bg-red-500/5 px-4 py-2 text-sm text-[color:var(--danger)]" role="alert">
                         {bridge.proposeError}
                       </p>
                     ) : null}
                     {bridge.confirmError ? (
-                      <p className="border-b border-red-500/20 bg-red-500/5 px-4 py-2 text-sm text-red-300">{bridge.confirmError}</p>
+                      <p className="border-b border-red-500/20 bg-red-500/5 px-4 py-2 text-sm text-[color:var(--danger)]">{bridge.confirmError}</p>
                     ) : null}
                     <div className="flex flex-wrap gap-2 border-b border-zinc-800/80 px-4 py-3">
                       <button
@@ -1616,7 +1616,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     </p>
                     {bridge.proposing && !bridge.proposal?.ranked_options?.length ? (
                       <div className="space-y-2 p-4" aria-busy="true" aria-label="Agent ranking options">
-                        <p className="text-xs font-medium text-emerald-300/90">
+                        <p className="text-xs font-medium text-[color:var(--primary)]">
                           {bridge.proposeJobState
                             ? `Background job: ${bridge.proposeJobState}…`
                             : "Ranking options…"}
@@ -1636,11 +1636,11 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                             key={opt.option_id}
                             className={cn(
                               "relative flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-4",
-                              (isBest || isSel) && "bg-emerald-500/[0.06] ring-1 ring-inset ring-emerald-500/20",
+                              (isBest || isSel) && "bg-[color:var(--primary-soft)] ring-1 ring-inset ring-[color:var(--primary-soft)]",
                             )}
                           >
                             {isBest ? (
-                              <div className="absolute right-3 top-3 rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+                              <div className="absolute right-3 top-3 rounded bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[color:var(--primary)]">
                                 Best match
                               </div>
                             ) : null}
@@ -1652,9 +1652,9 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                                 <div>
                                   <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                                     Option {idx + 1}
-                                    {isBest ? <span className="ml-2 text-emerald-400/90">Recommended</span> : null}
+                                    {isBest ? <span className="ml-2 text-[color:var(--primary)]">Recommended</span> : null}
                                   </p>
-                                  <p className="mt-1 text-lg font-semibold tracking-tight text-zinc-50">{d.route}</p>
+                                  <p className="mt-1 text-lg font-semibold tracking-tight text-white">{d.route}</p>
                                 </div>
                                 <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                   <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2">
@@ -1679,7 +1679,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                                 className={cn(
                                   "inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold disabled:opacity-50 sm:min-h-11",
                                   isSel || !apiConfirmedOptionId
-                                    ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400"
+                                    ? "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]"
                                     : "border border-zinc-700 font-medium text-zinc-300 hover:bg-zinc-800",
                                 )}
                                 disabled={bridge.confirming || !bridge.proposal}
@@ -1713,19 +1713,19 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                           </p>
                           <ul className="mx-auto mt-4 max-w-md space-y-2 text-left text-xs text-zinc-500 sm:mx-0">
                             <li className="flex gap-2">
-                              <span className="text-emerald-500" aria-hidden>
+                              <span className="text-[color:var(--primary)]" aria-hidden>
                                 ·
                               </span>
                               Scans legs and builds scored alternatives
                             </li>
                             <li className="flex gap-2">
-                              <span className="text-emerald-500" aria-hidden>
+                              <span className="text-[color:var(--primary)]" aria-hidden>
                                 ·
                               </span>
                               Prepares cascade preview for hotels &amp; connections
                             </li>
                             <li className="flex gap-2">
-                              <span className="text-emerald-500" aria-hidden>
+                              <span className="text-[color:var(--primary)]" aria-hidden>
                                 ·
                               </span>
                               When ready, switch to <strong className="text-zinc-400">Ranked options</strong> (unlocks after the first proposal)
@@ -1749,7 +1749,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   Downstream effects
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                  <span className="rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                     {isApiReady
                       ? effectiveCascadePreview
                         ? `${ripplePreviewCount || "—"} preview item${ripplePreviewCount === 1 ? "" : "s"}`
@@ -1773,7 +1773,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         {effectiveCascadePreview ? (
                           <div className="border-b border-zinc-800/80 px-4 py-4">
                             <div className="flex gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-200">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-[color:var(--warn)]">
                                 <TriangleAlert aria-hidden />
                               </div>
                               <div className="min-w-0 flex-1">
@@ -1811,11 +1811,11 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       </>
                     ) : (
                       <>
-                        <p className="border-b border-amber-500/20 bg-amber-500/[0.04] px-4 py-3 text-xs leading-relaxed text-amber-200/90">
+                        <p className="border-b border-amber-500/20 bg-amber-500/[0.04] px-4 py-3 text-xs leading-relaxed text-[color:var(--warn)]/90">
                           Illustrative demo only — not your real hotel, meeting, or connection.
                         </p>
                         <div className="flex gap-3 px-4 py-4">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--primary)]">
                             <Check aria-hidden />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -1825,7 +1825,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                             </div>
                           </div>
                           <div className="shrink-0 self-center">
-                            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                            <span className="rounded-full border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                               Done
                             </span>
                           </div>
@@ -1841,8 +1841,8 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                             className={cn(
                               "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm",
                               meetingStatus === "pending"
-                                ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
-                                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+                                ? "border-amber-500/30 bg-amber-500/10 text-[color:var(--warn)]"
+                                : "border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--primary)]",
                             )}
                           >
                             {meetingStatus === "pending" ? <Calendar aria-hidden /> : <Check aria-hidden />}
@@ -1868,7 +1868,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                               <>
                                 <button
                                   type="button"
-                                  className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-emerald-400"
+                                  className="rounded-lg bg-[color:var(--primary)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[color:var(--primary)]"
                                   onClick={() => resolveMeeting("moved")}
                                 >
                                   Move it
@@ -1882,7 +1882,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                                 </button>
                               </>
                             ) : meetingStatus === "moved" ? (
-                              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                              <span className="rounded-full border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                                 Moved
                               </span>
                             ) : (
@@ -1894,7 +1894,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         </div>
 
                         <div className="flex gap-3 px-4 py-4">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--primary)]">
                             <Check aria-hidden />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -1905,7 +1905,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                             </div>
                           </div>
                           <div className="shrink-0 self-center">
-                            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                            <span className="rounded-full border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                               OK
                             </span>
                           </div>
@@ -1921,9 +1921,9 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
             </div>
 
-            <div className="flex flex-col gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 rounded-xl border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[color:var(--primary-soft)] text-[color:var(--primary)]">
                   <Check aria-hidden />
                 </div>
                 <div>
@@ -1944,7 +1944,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   "inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold",
                   isApiReady
                     ? "cursor-not-allowed border border-zinc-700 bg-zinc-900/60 text-zinc-500"
-                    : "bg-emerald-500 text-zinc-950 hover:bg-emerald-400",
+                    : "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]",
                 )}
                 title={isApiReady ? "Sharing is not available yet for live trips." : undefined}
               >
@@ -1967,17 +1967,17 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
                 <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" aria-hidden />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--primary)]" aria-hidden />
                   Compensation
                 </div>
                 <span
                   className={cn(
                     "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide",
                     isApiReady && effectiveCompensationDraft && effectiveCompensationDraft.eligible === true
-                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                      ? "border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--primary)]"
                       : isApiReady
                         ? "border-zinc-600 bg-zinc-800/80 text-zinc-400"
-                        : "border-amber-500/30 bg-amber-500/10 text-amber-200",
+                        : "border-amber-500/30 bg-amber-500/10 text-[color:var(--warn)]",
                   )}
                 >
                   {isApiReady
@@ -2015,10 +2015,10 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   <>
                     <div>
                       <div
-                        className="flex items-baseline gap-1 font-serif text-4xl font-semibold tracking-tight text-emerald-300"
+                        className="flex items-baseline gap-1 font-serif text-4xl font-semibold tracking-tight text-[color:var(--primary)]"
                         style={{ fontFamily: "var(--tg-playfair), Georgia, serif" }}
                       >
-                        <span className="text-2xl text-emerald-400/90">₹</span>
+                        <span className="text-2xl text-[color:var(--primary)]">₹</span>
                         <span>10,000</span>
                       </div>
                       <div className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500">Demo figure only</div>
@@ -2033,7 +2033,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   <span>{claimSubmitted ? "Step 3 of 3" : "Step 2 of 3"}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
-                  <div className="h-full rounded-full bg-emerald-500/80 transition-all duration-500" style={{ width: `${compFillPct}%` }} />
+                  <div className="h-full rounded-full bg-[color:var(--primary-soft)] transition-all duration-500" style={{ width: `${compFillPct}%` }} />
                 </div>
                 <button
                   type="button"

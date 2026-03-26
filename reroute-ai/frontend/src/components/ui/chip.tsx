@@ -4,7 +4,7 @@ import { cn } from "@/lib/cn";
 
 const tones = {
   neutral: "border-zinc-700 bg-zinc-800/60 text-zinc-300",
-  success: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  success: "border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--primary)]",
   warning: "border-amber-500/35 bg-amber-500/10 text-amber-200",
   danger: "border-red-500/35 bg-red-500/10 text-red-300",
   info: "border-sky-500/30 bg-sky-500/10 text-sky-200",

@@ -281,50 +281,31 @@ export default function HomePage() {
               </div>
             </article>
 
-            {/* Feature bottom-right — ocean/sunset gradient card (replaces emerald) */}
+            {/* Feature bottom-right */}
             <article
-              className={cn(
-                "relative flex flex-col overflow-hidden rounded-2xl border p-6 shadow-lg sm:p-7",
-              )}
+              className="relative flex flex-col overflow-hidden rounded-2xl border p-6 sm:p-7"
               style={{
-                borderColor: "rgba(79,174,255,0.25)",
-                background: "linear-gradient(135deg, #1a3f6e 0%, #0e2952 55%, #08101e 100%)",
-                boxShadow: "0 12px 40px rgba(79,174,255,0.18)",
+                borderColor: "var(--stroke)",
+                background: "var(--surface-1)",
               }}
             >
-              {/* Sunset glow blob */}
-              <div
-                className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl"
-                style={{ background: "color-mix(in srgb, var(--accent) 22%, transparent)" }}
-                aria-hidden
-              />
-              {/* Sky glow blob */}
-              <div
-                className="pointer-events-none absolute -left-12 bottom-0 h-40 w-40 rounded-full blur-2xl"
-                style={{ background: "color-mix(in srgb, var(--primary) 18%, transparent)" }}
-                aria-hidden
-              />
-              <h3 className="relative text-lg font-semibold tracking-tight text-white sm:text-xl">{featureBottomRight.title}</h3>
-              <p className="relative mt-2 text-sm leading-relaxed" style={{ color: "rgba(232,240,254,0.85)" }}>{featureBottomRight.body}</p>
+              <h3 className="relative text-lg font-semibold tracking-tight sm:text-xl" style={{ color: "var(--fg)" }}>{featureBottomRight.title}</h3>
+              <p className="relative mt-2 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>{featureBottomRight.body}</p>
               <Link
                 href={featureBottomRight.href}
-                className="relative mt-5 inline-flex items-center gap-1 text-sm font-semibold text-white hover:underline transition"
+                className="relative mt-5 inline-flex items-center gap-1 text-sm font-semibold transition hover:opacity-80"
+                style={{ color: "var(--primary)" }}
               >
                 {featureBottomRight.cta}
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </Link>
-              <div className="relative mt-6 aspect-[2/1] w-full overflow-hidden rounded-xl border border-white/15">
+              <div className="relative mt-6 aspect-[2/1] w-full overflow-hidden rounded-xl border" style={{ borderColor: "var(--stroke)" }}>
                 <Image
                   src={featureBottomRight.image}
                   alt=""
                   fill
-                  className="object-cover object-center opacity-85"
+                  className="object-cover object-center opacity-90"
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: "linear-gradient(to top, rgba(8,16,30,0.75), transparent)" }}
-                  aria-hidden
                 />
               </div>
             </article>

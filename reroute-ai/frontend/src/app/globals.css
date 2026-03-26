@@ -21,9 +21,9 @@
   --subtle: rgba(232, 240, 254, 0.50);
 
   /* Primary — ocean blue */
-  --primary:        #4faeff;
-  --primary-strong: #1a84ff;
-  --primary-soft:   rgba(79, 174, 255, 0.15);
+  --primary:        #3b8fd9;
+  --primary-strong: #1a6cc2;
+  --primary-soft:   rgba(59, 143, 217, 0.15);
 
   /* Accent — sunset orange */
   --accent:      #ff8c42;
@@ -42,6 +42,10 @@
   --sky-top:    rgba(79, 174, 255, 0.24);
   --sky-mid:    rgba(56, 189, 248, 0.13);
   --sky-sunset: rgba(255, 140, 66, 0.13);
+
+  /* Card surface */
+  --card-bg:     rgba(255, 255, 255, 0.05);
+  --card-border: rgba(255, 255, 255, 0.09);
 }
 
 /* ── Light mode ─────────────────────────────── */
@@ -75,6 +79,10 @@
   --sky-top:    rgba(0, 104, 225, 0.16);
   --sky-mid:    rgba(14, 165, 233, 0.09);
   --sky-sunset: rgba(232, 98, 26, 0.09);
+
+  /* Card surface — white in light mode */
+  --card-bg:     rgba(255, 255, 255, 0.88);
+  --card-border: rgba(11, 26, 46, 0.10);
 }
 
 /* ── Tailwind bridge ────────────────────────── */
@@ -83,6 +91,19 @@
   --color-foreground:  var(--fg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Map legacy zinc palette to responsive semantic tokens */
+  --color-zinc-950: var(--surface-0);
+  --color-zinc-900: var(--surface-1);
+  --color-zinc-800: var(--surface-2);
+  --color-zinc-700: var(--stroke-strong);
+  --color-zinc-600: var(--stroke);
+  --color-zinc-500: var(--subtle);
+  --color-zinc-400: var(--muted);
+  --color-zinc-300: var(--fg);
+  --color-zinc-200: var(--fg);
+  --color-zinc-100: var(--fg);
+  --color-zinc-50:  var(--fg);
 }
 
 /* ── Base ───────────────────────────────────── */
@@ -105,9 +126,8 @@ body {
   box-shadow: var(--shadow-1);
 }
 .rr-card {
-  background: linear-gradient(180deg, var(--surface-2), var(--surface-0));
-  border: 1px solid var(--stroke);
-  box-shadow: var(--shadow-1);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
 }
 .rr-ring {
   box-shadow: 0 0 0 1px var(--stroke), var(--shadow-1);
@@ -159,14 +179,6 @@ body {
 
 /* Inline-divider text background in auth */
 .light span.bg-zinc-950 { background-color: var(--bg) !important; }
-
-/* Feature bottom-right article (was emerald gradient, now ocean gradient) */
-.light article[class*="from-emerald"] {
-  background-image: linear-gradient(135deg,
-    rgba(0, 104, 225, 0.85),
-    rgba(0, 80, 180, 0.80),
-    #0b1a2e) !important;
-}
 
 /* ── Theme toggle icon flip ─────────────────── */
 .theme-toggle-sun  { display: none;  }

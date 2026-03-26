@@ -34,9 +34,13 @@ const highlights = [
 export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
   return (
     <div
-      className="flex min-h-dvh flex-col lg:flex-row"
+      className="relative flex min-h-dvh flex-col lg:flex-row"
       style={{ background: "var(--bg)", color: "var(--fg)" }}
     >
+      {/* Theme toggle — always top-right */}
+      <div className="absolute right-4 top-4 z-50 sm:right-6 sm:top-5">
+        <ThemeToggle />
+      </div>
       {/* ── Brand panel (always dark — photo bg) ────────── */}
       <aside className="relative flex min-h-[38vh] flex-col justify-between overflow-hidden lg:min-h-dvh lg:w-[min(44%,520px)] lg:shrink-0 xl:w-[min(42%,560px)]">
         <div className="absolute inset-0">
@@ -80,11 +84,10 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
         <div className="relative z-10 flex flex-1 flex-col px-6 pb-8 pt-6 sm:px-10 sm:pb-10 sm:pt-8 lg:justify-center lg:py-12">
           <Link href="/" className="inline-flex w-fit items-center gap-2.5 font-semibold tracking-tight" style={{ color: "#ffffff" }}>
             <span
-              className="flex h-10 w-10 items-center justify-center rounded-xl ring-1"
+              className="flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-[rgba(79,174,255,0.30)]"
               style={{
                 background: "rgba(79,174,255,0.15)",
                 color: "#7ec8ff",
-                ringColor: "rgba(79,174,255,0.30)",
               }}
             >
               <Plane className="h-5 w-5" aria-hidden />
@@ -134,9 +137,6 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
         style={{ background: "var(--bg)" }}
       >
         <div className="mx-auto w-full max-w-[400px]">
-          <div className="mb-4 flex justify-end">
-            <ThemeToggle />
-          </div>
           <div
             className="rounded-2xl border p-8 shadow-2xl backdrop-blur-md sm:p-9"
             style={{

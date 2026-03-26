@@ -57,7 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="flex min-h-screen flex-1 items-center justify-center gap-2 bg-zinc-950 text-sm text-zinc-500">
-        <Loader2 className="h-5 w-5 animate-spin text-emerald-500/70" aria-hidden />
+        <Loader2 className="h-5 w-5 animate-spin text-[color:var(--primary)]" aria-hidden />
         Loading workspace…
       </div>
     );
@@ -70,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           onClick={() => void reload()}
-          className="text-sm font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+          className="text-sm font-medium text-[color:var(--primary)] underline underline-offset-2 hover:text-[color:var(--primary)]"
         >
           Retry
         </button>

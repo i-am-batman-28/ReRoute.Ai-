@@ -219,10 +219,9 @@ export function PricingSection() {
               style={
                 plan.featured
                   ? {
-                      borderColor: "rgba(79,174,255,0.35)",
-                      background:
-                        "linear-gradient(160deg, rgba(26,63,110,0.40) 0%, color-mix(in srgb, var(--surface-1) 70%, transparent) 60%, var(--surface-0) 100%)",
-                      boxShadow: "0 8px 32px rgba(79,174,255,0.12), var(--shadow-1)",
+                      borderColor: "var(--stroke)",
+                      background: "var(--surface-1)",
+                      boxShadow: "var(--shadow-1)",
                       marginTop: "-4px",
                       marginBottom: "4px",
                     }
@@ -235,11 +234,10 @@ export function PricingSection() {
             >
               {plan.featured ? (
                 <span
-                  className="absolute right-5 top-5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1"
+                  className="absolute right-5 top-5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-[var(--primary-soft)]"
                   style={{
                     background: "var(--primary-soft)",
                     color: "var(--primary)",
-                    ringColor: "var(--primary-soft)",
                   }}
                 >
                   Most popular

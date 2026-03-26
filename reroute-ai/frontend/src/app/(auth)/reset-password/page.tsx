@@ -49,7 +49,7 @@ function ResetPasswordForm() {
     return (
       <div className="space-y-4 text-sm text-zinc-300">
         <p>This link is missing a token. Open the link from your email, or request a new reset.</p>
-        <Link href="/forgot-password" className="font-semibold text-emerald-400 hover:text-emerald-300">
+        <Link href="/forgot-password" className="font-semibold text-[color:var(--primary)] hover:text-[color:var(--primary)]">
           Request reset email
         </Link>
       </div>
@@ -100,7 +100,7 @@ function ResetPasswordForm() {
       <button
         type="submit"
         disabled={loading}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-emerald-500/15 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-55"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[color:var(--primary)] py-3.5 text-sm font-semibold text-white shadow-lg shadow-md transition hover:bg-[color:var(--primary)] disabled:cursor-not-allowed disabled:opacity-55"
       >
         {loading ? (
           <>
@@ -131,7 +131,7 @@ export default function ResetPasswordPage() {
       <Suspense
         fallback={
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-zinc-500">
-            <Loader2 className="h-5 w-5 animate-spin text-emerald-500/70" aria-hidden />
+            <Loader2 className="h-5 w-5 animate-spin text-[color:var(--primary)]" aria-hidden />
             Loading…
           </div>
         }

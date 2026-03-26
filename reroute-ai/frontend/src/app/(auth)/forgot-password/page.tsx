@@ -34,14 +34,14 @@ export default function ForgotPasswordPage() {
       footer={
         <>
           Remember your password?{" "}
-          <Link href="/login" className="font-semibold text-emerald-400 hover:text-emerald-300">
+          <Link href="/login" className="font-semibold text-[color:var(--primary)] hover:text-[color:var(--primary)]">
             Sign in
           </Link>
         </>
       }
     >
       {done ? (
-        <div className="space-y-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-5 text-sm text-zinc-200">
+        <div className="space-y-4 rounded-xl border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-4 py-5 text-sm text-zinc-200">
           <p>
             If an account exists for <span className="font-medium text-zinc-100">{email}</span> and it uses a
             password, check your inbox for a reset link.
@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
           <p className="text-zinc-500">Google-only accounts do not receive this email — use Google sign-in instead.</p>
           <Link
             href="/login"
-            className="inline-flex text-sm font-semibold text-emerald-400 hover:text-emerald-300"
+            className="inline-flex text-sm font-semibold text-[color:var(--primary)] hover:text-[color:var(--primary)]"
           >
             Back to sign in
           </Link>
@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-3.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-emerald-500/15 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-55"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[color:var(--primary)] py-3.5 text-sm font-semibold text-white shadow-lg shadow-md transition hover:bg-[color:var(--primary)] disabled:cursor-not-allowed disabled:opacity-55"
           >
             {loading ? (
               <>

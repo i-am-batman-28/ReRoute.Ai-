@@ -18,7 +18,7 @@ import {
 import { clearStoredToken } from "@/lib/auth-token";
 
 const inputClass =
-  "mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/30";
+  "mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-[color:var(--primary-soft)] focus:outline-none focus:ring-1 focus:ring-[color:var(--primary-soft)]";
 const labelClass = "block text-xs font-medium uppercase tracking-wide text-zinc-500";
 
 function formatDt(iso: string | null | undefined): string {
@@ -177,7 +177,7 @@ export default function SettingsPage() {
         >
           ← Overview
         </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-50">Account settings</h1>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">Account settings</h1>
         <p className="mt-1 text-sm text-zinc-500">Profile, sign-in methods, and active sessions.</p>
       </div>
 
@@ -214,7 +214,7 @@ export default function SettingsPage() {
               {profileErr}
             </p>
           ) : null}
-          {profileMsg ? <p className="text-sm text-emerald-400">{profileMsg}</p> : null}
+          {profileMsg ? <p className="text-sm text-[color:var(--primary)]">{profileMsg}</p> : null}
           <button
             type="submit"
             disabled={profileLoading}
@@ -301,7 +301,7 @@ export default function SettingsPage() {
               {pwErr}
             </p>
           ) : null}
-          {pwMsg ? <p className="text-sm text-emerald-400">{pwMsg}</p> : null}
+          {pwMsg ? <p className="text-sm text-[color:var(--primary)]">{pwMsg}</p> : null}
           <button
             type="submit"
             disabled={pwLoading}
@@ -316,7 +316,7 @@ export default function SettingsPage() {
           </button>
         </form>
         <p className="mt-3 text-xs text-zinc-500">
-          <Link href="/forgot-password" className="text-emerald-400/90 underline-offset-2 hover:underline">
+          <Link href="/forgot-password" className="text-[color:var(--primary)] underline-offset-2 hover:underline">
             Forgot password? Email reset
           </Link>
         </p>
@@ -348,7 +348,7 @@ export default function SettingsPage() {
         ) : null}
         {sessLoading ? (
           <div className="mt-6 flex items-center gap-2 text-sm text-zinc-500">
-            <Loader2 className="h-4 w-4 animate-spin text-emerald-500/70" aria-hidden />
+            <Loader2 className="h-4 w-4 animate-spin text-[color:var(--primary)]" aria-hidden />
             Loading sessions…
           </div>
         ) : sessions && sessions.length === 0 ? (

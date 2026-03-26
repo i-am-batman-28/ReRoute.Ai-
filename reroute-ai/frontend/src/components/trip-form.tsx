@@ -19,7 +19,7 @@ import {
 import { validateIataField, validateTravelDateYmd } from "@/lib/trip-validation";
 
 const inputClass =
-  "mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/30";
+  "mt-1.5 w-full rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-[color:var(--primary-soft)] focus:outline-none focus:ring-1 focus:ring-[color:var(--primary-soft)]";
 const labelClass = "block text-xs font-medium uppercase tracking-wide text-zinc-500";
 const sectionTitle = "text-xs font-semibold uppercase tracking-wide text-zinc-400";
 
@@ -208,7 +208,7 @@ export function TripForm({
   if (loading || !user?.email) {
     return (
       <div className="mx-auto flex max-w-lg flex-col items-center justify-center gap-3 px-4 py-24 text-zinc-400">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" aria-hidden />
+        <Loader2 className="h-8 w-8 animate-spin text-[color:var(--primary)]" aria-hidden />
         <p className="text-sm">Loading…</p>
       </div>
     );
@@ -218,7 +218,7 @@ export function TripForm({
     return (
       <div className="mx-auto max-w-lg px-4 py-8 sm:px-6">
         <p className="text-sm text-red-400">{sessionError ?? "Sign in required."}</p>
-        <Link href="/" className="mt-4 inline-block text-sm text-emerald-400 underline">
+        <Link href="/" className="mt-4 inline-block text-sm text-[color:var(--primary)] underline">
           Back to sign in
         </Link>
       </div>
@@ -228,7 +228,7 @@ export function TripForm({
   if (mode === "edit" && seedLoading) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-3 px-4 py-24 text-zinc-400">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" aria-hidden />
+        <Loader2 className="h-8 w-8 animate-spin text-[color:var(--primary)]" aria-hidden />
         <p className="text-sm">Loading trip…</p>
       </div>
     );
@@ -238,7 +238,7 @@ export function TripForm({
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <p className="text-sm text-red-400">{seedError}</p>
-        <Link href={backHref} className="mt-4 inline-block text-sm text-emerald-400 underline">
+        <Link href={backHref} className="mt-4 inline-block text-sm text-[color:var(--primary)] underline">
           Back
         </Link>
       </div>
@@ -262,7 +262,7 @@ export function TripForm({
       >
         ← Back
       </Link>
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-50">{pageTitle}</h1>
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white">{pageTitle}</h1>
       <p className="mt-1 text-sm text-zinc-500">{pageDescription}</p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-10" noValidate aria-describedby={error ? "trip-form-error" : undefined}>
@@ -647,7 +647,7 @@ export function TripForm({
                 href={originMapHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-emerald-400 underline-offset-2 hover:text-emerald-300 hover:underline"
+                className="font-medium text-[color:var(--primary)] underline-offset-2 hover:text-[color:var(--primary)] hover:underline"
               >
                 Open origin in Maps
               </a>
@@ -657,7 +657,7 @@ export function TripForm({
                 href={destMapHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-emerald-400 underline-offset-2 hover:text-emerald-300 hover:underline"
+                className="font-medium text-[color:var(--primary)] underline-offset-2 hover:text-[color:var(--primary)] hover:underline"
               >
                 Open destination in Maps
               </a>
@@ -675,7 +675,7 @@ export function TripForm({
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-emerald-400 disabled:opacity-60"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[color:var(--primary)] px-4 py-2 text-sm font-semibold text-white hover:bg-[color:var(--primary)] disabled:opacity-60"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
             {submitLabel}

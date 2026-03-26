@@ -35,6 +35,7 @@ type RerouteSessionContextValue = {
 const RerouteSessionContext = createContext<RerouteSessionContextValue | null>(null);
 
 const jsonHeaders: HeadersInit = { "Content-Type": "application/json" };
+const REQUEST_TIMEOUT_MS = 10000;
 
 export function RerouteSessionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -45,8 +46,10 @@ export function RerouteSessionProvider({ children }: { children: ReactNode }) {
   const reload = useCallback(async () => {
     setLoading(true);
     setError(null);
+    const ctrl = new AbortController();
+    const timeoutId = window.setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const res = await authFetch(`${getApiBase()}/users/me`, { headers: jsonHeaders });
+      const res = await authFetch(`${getApiBase()}/users/me`, { headers: jsonHeaders, signal: ctrl.signal });
       if (res.status === 401) {
         clearStoredToken();
         setUser(null);
@@ -62,9 +65,10 @@ export function RerouteSessionProvider({ children }: { children: ReactNode }) {
       }
       setUser(coerceUser(await res.json()));
     } catch {
-      setError("Network error — is the API running?");
+      setError("Could not reach session service. Check backend and refresh.");
       setUser(null);
     } finally {
+      window.clearTimeout(timeoutId);
       setLoading(false);
     }
   }, [router]);

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Activity, LayoutDashboard, Loader2, LogOut, MapPin, Radar, Settings } from "lucide-react";
 
 import { useRerouteSession } from "@/components/reroute-session-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/cn";
 
 const nav = [
@@ -79,15 +80,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-zinc-950 md:flex-row">
-      <aside className="hidden shrink-0 border-b border-zinc-800 bg-zinc-950 md:flex md:w-56 md:flex-col md:border-b-0 md:border-r">
+      <aside className="hidden shrink-0 border-b border-zinc-800 bg-zinc-950 light:border-zinc-200 light:bg-zinc-50 md:flex md:w-56 md:flex-col md:border-b-0 md:border-r">
         <div className="flex h-14 items-center border-b border-zinc-800 px-4">
           <Link
             href="/dashboard"
-            className="font-serif text-base font-semibold tracking-tight text-zinc-100"
+            className="font-serif text-base font-semibold tracking-tight text-zinc-100 light:text-zinc-900"
             style={{ fontFamily: "var(--tg-playfair), Georgia, serif" }}
           >
             ReRoute <em className="not-italic text-emerald-400/90">AI</em>
           </Link>
+          <ThemeToggle className="ml-auto" />
         </div>
         <nav className="flex-1 p-3" aria-label="Main">
           <NavLinks />
@@ -114,8 +116,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-950 px-3 py-2 md:hidden">
-          <span className="shrink-0 font-semibold text-zinc-100">ReRoute AI</span>
+        <header className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-950 px-3 py-2 light:border-zinc-200 light:bg-white md:hidden">
+          <span className="shrink-0 font-semibold text-zinc-100 light:text-zinc-900">ReRoute AI</span>
+          <ThemeToggle />
           <nav className="flex flex-1 justify-end gap-1 overflow-x-auto" aria-label="Main">
             {nav.map(({ href, label }) => {
               const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"));
@@ -134,7 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
         </header>
-        <main className="min-h-0 flex-1 overflow-auto bg-zinc-950">{children}</main>
+        <main className="min-h-0 flex-1 overflow-auto bg-zinc-950 light:bg-zinc-50">{children}</main>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight, Plane } from "lucide-react";
 
 import { PricingSection } from "@/components/marketing/pricing-section";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/cn";
 
 const featureTopRight = {
@@ -64,6 +65,7 @@ export default function HomePage() {
               </Link>
             </nav>
             <div className="flex items-center gap-2 sm:gap-3">
+              <ThemeToggle className="hidden sm:inline-flex" />
               <Link
                 href="/login"
                 className="hidden rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-zinc-200 backdrop-blur-sm transition hover:bg-white/10 sm:inline-flex"
@@ -91,7 +93,7 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-center text-base leading-relaxed text-zinc-400 sm:text-lg">
-            When schedules break, you get ranked options, downstream impact, and a calm path to confirm—built for
+            When schedules break, you get ranked options, downstream impact, and a calm path to confirm built for
             operators and travelers who can’t afford chaos.
           </p>
 

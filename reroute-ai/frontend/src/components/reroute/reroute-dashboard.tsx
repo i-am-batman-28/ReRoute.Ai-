@@ -15,11 +15,14 @@ import {
   IndianRupee,
   Loader2,
   LogOut,
+  MessageCircle,
+  Mic,
   Plane,
   Plus,
   RotateCcw,
   ScrollText,
   Sofa,
+  Sparkles,
   TrainFront,
   TriangleAlert,
   UtensilsCrossed,
@@ -352,7 +355,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
   );
 
   type UiDensity = "calm" | "standard" | "ops";
-  type RailTab = "radar" | "weather" | "logs";
+  type RailTab = "radar" | "assistant" | "weather" | "logs";
   const [uiDensity, setUiDensity] = useState<UiDensity>(() => readUiDensity());
   const [railTab, setRailTab] = useState<RailTab>("radar");
 
@@ -664,29 +667,30 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
   const apiBanner = isApiReady && bridge ? apiBannerCopy(bridge, confirmedOnceForTrip) : null;
 
   return (
-    <div className={cn("min-h-full bg-zinc-950 text-zinc-100 antialiased")}>
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.08),transparent)]" aria-hidden />
+    <div className={cn("min-h-full bg-[color:var(--bg)] text-[color:var(--fg)] antialiased")}>
+      <div className="pointer-events-none fixed inset-0 rr-hero-sky" aria-hidden />
       <div className="fixed right-4 top-4 z-[1100] flex max-w-sm flex-col gap-2" aria-live="polite">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="pointer-events-auto flex gap-3 rounded-xl border border-zinc-800 bg-zinc-900/95 p-3 shadow-lg shadow-black/40 backdrop-blur-md"
+            className="pointer-events-auto flex gap-3 rounded-xl border border-[color:var(--stroke)] bg-[color:color-mix(in_oklab,var(--bg),white_6%)] p-3 shadow-lg shadow-black/40 backdrop-blur-md"
           >
             <div
               className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800/80 text-zinc-200",
-                t.iconTone === "money" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-1)] text-[color:var(--fg)]",
+                t.iconTone === "money" &&
+                  "border-[color:color-mix(in_oklab,var(--ok),transparent_55%)] bg-[color:color-mix(in_oklab,var(--ok),transparent_88%)] text-[color:var(--ok)]",
               )}
             >
               {t.icon}
             </div>
             <div className="min-w-0 flex-1 pt-0.5">
-              <div className="text-sm font-semibold text-zinc-100">{t.title}</div>
-              <div className="mt-0.5 text-xs leading-snug text-zinc-400">{t.text}</div>
+              <div className="text-sm font-semibold text-[color:var(--fg)]">{t.title}</div>
+              <div className="mt-0.5 text-xs leading-snug text-[color:var(--subtle)]">{t.text}</div>
             </div>
             <button
               type="button"
-              className="shrink-0 rounded-lg p-1 text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-200"
+              className="shrink-0 rounded-lg p-1 text-[color:var(--subtle)] transition hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)]"
               onClick={() => dismissToast(t.id)}
               aria-label="Dismiss"
             >
@@ -2037,7 +2041,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     "flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold disabled:opacity-60",
                     isApiReady
                       ? "border border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:bg-zinc-800"
-                      : "bg-emerald-500 text-zinc-950 hover:bg-emerald-400",
+                      : "bg-[color:var(--primary)] text-[color:var(--bg)] hover:bg-[color:var(--primary-strong)]",
                   )}
                   disabled={claimSubmitted || (isApiReady && !effectiveCompensationDraft)}
                   onClick={submitClaim}
@@ -2055,16 +2059,16 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   )}
                 </button>
                 {!isApiReady ? (
-                  <div className="space-y-2 border-t border-zinc-800/80 pt-4">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">Demo perks (not real)</p>
-                    <div className="flex gap-2 text-xs text-zinc-400">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800/60 text-zinc-300">
+                  <div className="space-y-2 border-t border-[color:var(--stroke)] pt-4">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-[color:var(--subtle)]">Demo perks (not real)</p>
+                    <div className="flex gap-2 text-xs text-[color:var(--muted)]">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-1)] text-[color:var(--muted)]">
                         <UtensilsCrossed className="h-3.5 w-3.5" aria-hidden />
                       </span>
                       Meal voucher (illustration)
                     </div>
-                    <div className="flex gap-2 text-xs text-zinc-400">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800/60 text-zinc-300">
+                    <div className="flex gap-2 text-xs text-[color:var(--muted)]">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-1)] text-[color:var(--muted)]">
                         <Sofa className="h-3.5 w-3.5" aria-hidden />
                       </span>
                       Lounge access (illustration)
@@ -2077,13 +2081,14 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
 
             {uiDensity !== "ops" ? (
               <div
-                className="flex shrink-0 gap-1 rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-1"
+                className="flex shrink-0 gap-1 rounded-xl border border-[color:var(--stroke)] bg-[color:var(--surface-1)] p-1"
                 role="tablist"
                 aria-label="Context panels"
               >
                 {(
                   [
                     { id: "radar" as const, label: "Legs", icon: BarChart3 },
+                    { id: "assistant" as const, label: "Assist", icon: Sparkles },
                     { id: "weather" as const, label: "Weather", icon: Cloud },
                     { id: "logs" as const, label: "Logs", icon: ScrollText },
                   ] as const
@@ -2100,8 +2105,8 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     className={cn(
                       "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-[11px] font-semibold transition sm:min-h-10",
                       railTab === id
-                        ? "bg-zinc-800 text-white ring-1 ring-zinc-700"
-                        : "text-zinc-500 hover:bg-zinc-800/60 hover:text-zinc-300",
+                        ? "bg-[color:var(--surface-2)] text-[color:var(--fg)] ring-1 ring-[color:var(--stroke-strong)]"
+                        : "text-[color:var(--subtle)] hover:bg-[color:var(--surface-2)] hover:text-[color:var(--fg)]",
                     )}
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
@@ -2112,39 +2117,45 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
             ) : null}
 
             {(uiDensity === "ops" || railTab === "radar") ? (
-              <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20 transition-opacity duration-200">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
-                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
+              <div className="rr-card overflow-hidden rounded-xl transition-opacity duration-200">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--stroke)] px-4 py-3">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[color:var(--subtle)]">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--subtle)]" aria-hidden />
                     Itinerary legs
                   </div>
-                  <span className="text-xs text-zinc-500">{isApiReady ? "From trip" : "Demo"}</span>
+                  <span className="text-xs text-[color:var(--subtle)]">{isApiReady ? "From trip" : "Demo"}</span>
                 </div>
                 <div className={cn("space-y-3 p-4", uiDensity === "calm" && "space-y-2 p-3")}>
                   {isApiReady && sortedLegs.length > 0 ? (
                     sortedLegs.map((leg) => (
                       <div
                         key={leg.id}
-                        className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5 text-sm text-zinc-200"
+                        className="rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2.5 text-sm text-[color:var(--muted)]"
                       >
-                        <div className="font-mono text-xs font-semibold text-zinc-300">{leg.flight_number ?? leg.mode}</div>
-                        <div className="mt-1 text-xs text-zinc-400">
+                        <div className="font-mono text-xs font-semibold text-[color:var(--fg)]">
+                          {leg.flight_number ?? leg.mode}
+                        </div>
+                        <div className="mt-1 text-xs text-[color:var(--subtle)]">
                           {leg.origin_code} → {leg.destination_code}
                           {leg.travel_date ? ` · ${leg.travel_date}` : ""}
                         </div>
                       </div>
                     ))
                   ) : isApiReady && primaryFromSnapshot ? (
-                    <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5 text-sm text-zinc-200">
-                      <div className="font-mono text-xs font-semibold text-zinc-300">{primaryFromSnapshot.flight_number ?? "—"}</div>
-                      <div className="mt-1 text-xs text-zinc-400">
+                    <div className="rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2.5 text-sm text-[color:var(--muted)]">
+                      <div className="font-mono text-xs font-semibold text-[color:var(--fg)]">
+                        {primaryFromSnapshot.flight_number ?? "—"}
+                      </div>
+                      <div className="mt-1 text-xs text-[color:var(--subtle)]">
                         {primaryFromSnapshot.origin} → {primaryFromSnapshot.destination}
                         {primaryFromSnapshot.date ? ` · ${primaryFromSnapshot.date}` : ""}
                       </div>
-                      <p className="mt-2 text-[11px] text-zinc-500">Synced legs will appear after itinerary refresh.</p>
+                      <p className="mt-2 text-[11px] text-[color:var(--subtle)] opacity-85">
+                        Synced legs will appear after itinerary refresh.
+                      </p>
                     </div>
                   ) : (
-                    <p className="text-xs leading-relaxed text-zinc-500">
+                    <p className="text-xs leading-relaxed text-[color:var(--subtle)]">
                       Predictive on-time scores are not shown here yet. Use the agent run and activity log for current
                       signals.
                     </p>
@@ -2153,27 +2164,92 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
             ) : null}
 
+            {(uiDensity === "ops" || railTab === "assistant") ? (
+              <div className="rr-card overflow-hidden rounded-xl transition-opacity duration-200">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--stroke)] px-4 py-3">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[color:var(--subtle)]">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--primary)]" aria-hidden />
+                    Assistant
+                  </div>
+                  <span className="text-xs text-[color:var(--subtle)]">Voice ready (UI)</span>
+                </div>
+                <div className="space-y-3 p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-1)] px-3 py-2 text-xs font-semibold text-[color:var(--fg)] transition hover:bg-[color:var(--surface-2)]"
+                      onClick={() =>
+                        pushToast(
+                          <MessageCircle className="h-4 w-4" aria-hidden />,
+                          "Assistant",
+                          "Type or use voice (UI shell).",
+                        )
+                      }
+                    >
+                      <MessageCircle className="h-4 w-4 opacity-90" aria-hidden />
+                      Ask ReRoute
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 rounded-lg bg-[color:var(--primary)] px-3 py-2 text-xs font-semibold text-[color:var(--bg)] transition hover:bg-[color:var(--primary-strong)]"
+                      onClick={() =>
+                        pushToast(
+                          <Mic className="h-4 w-4" aria-hidden />,
+                          "Voice (demo)",
+                          "Microphone capture is not wired in this build.",
+                        )
+                      }
+                    >
+                      <Mic className="h-4 w-4" aria-hidden />
+                      Voice
+                    </button>
+                    <span className="text-xs text-[color:var(--subtle)]">High‑stress mode: clear next action</span>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {[
+                      "Summarize what changed and what I should do now.",
+                      "Show the best option if I must reach by 11:00.",
+                      "Minimize total cost, keep hotel unchanged.",
+                      "Explain trade-offs between top 2 options.",
+                    ].map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        className="rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-left text-xs text-[color:var(--muted)] transition hover:bg-[color:var(--surface-1)]"
+                        onClick={() =>
+                          pushToast(<Sparkles className="h-4 w-4" aria-hidden />, "Prompt queued (demo)", q)
+                        }
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             {(uiDensity === "ops" || railTab === "weather") ? (
-              <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20 transition-opacity duration-200">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
-                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
+              <div className="rr-card overflow-hidden rounded-xl transition-opacity duration-200">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--stroke)] px-4 py-3">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[color:var(--subtle)]">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--subtle)]" aria-hidden />
                     Weather context
                   </div>
                 </div>
                 <div className="p-4">
                   {isApiReady && citiesLine.length > 0 && citiesLine[0] !== "—" ? (
                     <div className="space-y-2">
-                      <p className="text-xs leading-relaxed text-zinc-400">
+                      <p className="text-xs leading-relaxed text-[color:var(--muted)]">
                         Airports on this trip: {citiesLine.join(" → ")}. Live weather cards require coordinates in your trip
                         snapshot and are summarized during each agent run (see Activity log).
                       </p>
-                      <p className="text-[11px] text-zinc-500">
+                      <p className="text-[11px] text-[color:var(--subtle)]">
                         We don&apos;t show fake temperatures here — check the agent tool trace for what was evaluated.
                       </p>
                     </div>
                   ) : (
-                    <p className="text-xs leading-relaxed text-zinc-500">
+                    <p className="text-xs leading-relaxed text-[color:var(--subtle)]">
                       Connect a trip with airport codes in your itinerary to see route context. No live weather is shown in
                       this panel until wired to your provider.
                     </p>
@@ -2208,7 +2284,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         Agent activity
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                        <span className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                           Live
                         </span>
                         <button
@@ -2238,7 +2314,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
                       Agent activity
                     </div>
-                    <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                    <span className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                       {displayLogs.length} events
                     </span>
                   </div>

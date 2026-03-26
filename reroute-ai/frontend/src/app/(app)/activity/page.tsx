@@ -94,13 +94,15 @@ export default function ActivityPage() {
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Activity</h1>
-          <p className="mt-1 text-sm text-zinc-500">Disruption and agent-related events across all trips, newest first.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--fg)]">Activity</h1>
+          <p className="mt-1 text-sm text-[color:var(--subtle)]">
+            Disruption and agent-related events across all trips, newest first.
+          </p>
         </div>
         <button
           type="button"
           onClick={() => void load()}
-          className="rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
+          className="rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-1)] px-3 py-2 text-xs font-medium text-[color:var(--muted)] transition hover:bg-[color:var(--surface-2)] hover:text-[color:var(--fg)]"
         >
           Refresh
         </button>
@@ -115,23 +117,27 @@ export default function ActivityPage() {
           {rows.map((ev) => {
             const when = new Date(ev.created_at);
             return (
-              <li key={ev.id} className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-4 py-3">
+              <li key={ev.id} className="rr-card rounded-xl px-4 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">{when.toLocaleString()}</span>
+                  <span className="text-xs font-medium uppercase tracking-wide text-[color:var(--subtle)]">
+                    {when.toLocaleString()}
+                  </span>
                   <Link
                     href={`/trips/${ev.trip_id}`}
-                    className="text-xs font-medium text-emerald-400 underline-offset-2 hover:text-emerald-300 hover:underline"
+                    className="text-xs font-medium text-[color:var(--primary)] underline-offset-2 hover:text-[color:var(--primary-strong)] hover:underline"
                   >
                     {ev.tripTitle?.trim() || "Trip"} →
                   </Link>
                 </div>
-                <p className="mt-1 text-sm font-medium text-zinc-100">{ev.kind}</p>
+                <p className="mt-1 text-sm font-medium text-[color:var(--fg)]">{ev.kind}</p>
                 {ev.route ? (
-                  <p className="mt-0.5 text-xs text-zinc-600">
-                    Route <span className="font-mono text-zinc-400">{ev.route}</span>
+                  <p className="mt-0.5 text-xs text-[color:var(--subtle)]">
+                    Route <span className="font-mono text-[color:var(--muted)]">{ev.route}</span>
                   </p>
                 ) : null}
-                {ev.disruption_type ? <p className="mt-0.5 text-sm text-zinc-500">{ev.disruption_type}</p> : null}
+                {ev.disruption_type ? (
+                  <p className="mt-0.5 text-sm text-[color:var(--subtle)]">{ev.disruption_type}</p>
+                ) : null}
               </li>
             );
           })}

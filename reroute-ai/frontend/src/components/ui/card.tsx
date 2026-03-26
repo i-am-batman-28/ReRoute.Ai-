@@ -6,7 +6,7 @@ export function Card({ className, children }: { className?: string; children: Re
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20 backdrop-blur-sm",
+        "rr-card overflow-hidden rounded-xl backdrop-blur-sm",
         className,
       )}
     >
@@ -27,7 +27,7 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3",
+        "flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--stroke)] px-4 py-3",
         className,
       )}
     >

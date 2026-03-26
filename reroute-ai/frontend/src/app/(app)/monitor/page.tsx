@@ -63,26 +63,26 @@ export default function MonitorPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Monitor</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--fg)]">Monitor</h1>
+      <p className="mt-1 text-sm text-[color:var(--subtle)]">
         Live summary of trips under watch, pending proposals, and last disruption signals.
       </p>
 
       {data ? (
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-4 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Trips</div>
-            <div className="mt-1 text-2xl font-semibold tabular-nums text-zinc-100">{data.trip_count}</div>
+          <div className="rr-card rounded-xl px-4 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--subtle)]">Trips</div>
+            <div className="mt-1 text-2xl font-semibold tabular-nums text-[color:var(--fg)]">{data.trip_count}</div>
           </div>
-          <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-4 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Pending proposals</div>
-            <div className="mt-1 text-2xl font-semibold tabular-nums text-amber-200/90">{data.total_pending_proposals}</div>
+          <div className="rr-card rounded-xl px-4 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--subtle)]">Pending proposals</div>
+            <div className="mt-1 text-2xl font-semibold tabular-nums text-[color:var(--warn)]">{data.total_pending_proposals}</div>
           </div>
-          <div className="rounded-lg border border-zinc-800/80 bg-zinc-900/40 px-4 py-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Shown in table</div>
-            <div className="mt-1 text-2xl font-semibold tabular-nums text-zinc-100">{data.trips_shown}</div>
+          <div className="rr-card rounded-xl px-4 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--subtle)]">Shown in table</div>
+            <div className="mt-1 text-2xl font-semibold tabular-nums text-[color:var(--fg)]">{data.trips_shown}</div>
           </div>
-          <p className="sm:col-span-3 text-xs text-zinc-500">
+          <p className="sm:col-span-3 text-xs text-[color:var(--subtle)]">
             Generated {new Date(data.generated_at).toLocaleString()}
           </p>
         </div>
@@ -97,36 +97,36 @@ export default function MonitorPage() {
           .
         </p>
       ) : (
-        <div className="mt-8 overflow-x-auto rounded-lg border border-zinc-800/80 bg-zinc-900/40">
+        <div className="rr-card mt-8 overflow-x-auto rounded-xl">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-zinc-800 bg-zinc-950/80">
+            <thead className="border-b border-[color:var(--stroke)] bg-[color:var(--surface-0)]">
               <tr>
-                <th className="px-4 py-3 font-medium text-zinc-400">Trip</th>
-                <th className="px-4 py-3 font-medium text-zinc-400">Route</th>
-                <th className="px-4 py-3 font-medium text-zinc-400">Revision</th>
-                <th className="px-4 py-3 font-medium text-zinc-400">Pending</th>
-                <th className="px-4 py-3 font-medium text-zinc-400">Last disruption</th>
-                <th className="px-4 py-3 font-medium text-zinc-400" />
+                <th className="px-4 py-3 font-medium text-[color:var(--muted)]">Trip</th>
+                <th className="px-4 py-3 font-medium text-[color:var(--muted)]">Route</th>
+                <th className="px-4 py-3 font-medium text-[color:var(--muted)]">Revision</th>
+                <th className="px-4 py-3 font-medium text-[color:var(--muted)]">Pending</th>
+                <th className="px-4 py-3 font-medium text-[color:var(--muted)]">Last disruption</th>
+                <th className="px-4 py-3 font-medium text-[color:var(--muted)]" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800">
+            <tbody className="divide-y divide-[color:var(--stroke)]">
               {trips.map((row) => {
                 const tr = tripsById.get(row.trip_id);
                 const route = tr?.snapshot
                   ? buildSnapshotTripSummary(tr.snapshot as Record<string, unknown>).primaryRoute
                   : null;
                 return (
-                <tr key={row.trip_id} className="hover:bg-zinc-800/30">
-                  <td className="px-4 py-3 font-medium text-zinc-100">{row.title?.trim() || "Untitled"}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-zinc-500">{route ?? "—"}</td>
-                  <td className="px-4 py-3 tabular-nums text-zinc-500">{row.itinerary_revision}</td>
-                  <td className="px-4 py-3 tabular-nums text-amber-200/90">{row.pending_proposal_count}</td>
-                  <td className="px-4 py-3 text-zinc-500">
+                <tr key={row.trip_id} className="transition hover:bg-[color:var(--surface-1)]">
+                  <td className="px-4 py-3 font-medium text-[color:var(--fg)]">{row.title?.trim() || "Untitled"}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-[color:var(--subtle)]">{route ?? "—"}</td>
+                  <td className="px-4 py-3 tabular-nums text-[color:var(--subtle)]">{row.itinerary_revision}</td>
+                  <td className="px-4 py-3 tabular-nums text-[color:var(--warn)]">{row.pending_proposal_count}</td>
+                  <td className="px-4 py-3 text-[color:var(--subtle)]">
                     {row.last_disruption_kind ? (
                       <>
                         {row.last_disruption_kind}
                         {row.last_disruption_at ? (
-                          <span className="block text-xs text-zinc-600">
+                          <span className="block text-xs text-[color:var(--subtle)] opacity-80">
                             {new Date(row.last_disruption_at).toLocaleString()}
                           </span>
                         ) : null}
@@ -138,7 +138,7 @@ export default function MonitorPage() {
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/trips/${row.trip_id}`}
-                      className="font-medium text-emerald-400 underline-offset-2 hover:text-emerald-300 hover:underline"
+                      className="font-medium text-[color:var(--primary)] underline-offset-2 hover:text-[color:var(--primary-strong)] hover:underline"
                     >
                       Open
                     </Link>

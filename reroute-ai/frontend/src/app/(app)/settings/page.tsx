@@ -218,7 +218,12 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={profileLoading}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 disabled:opacity-50"
+            className="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:opacity-80 disabled:opacity-50"
+            style={{
+              borderColor: "var(--stroke-strong)",
+              background: "var(--surface-1)",
+              color: "var(--fg)",
+            }}
           >
             {profileLoading ? "Saving…" : "Save profile"}
           </button>
@@ -300,7 +305,12 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={pwLoading}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 disabled:opacity-50"
+            className="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:opacity-80 disabled:opacity-50"
+            style={{
+              borderColor: "var(--stroke-strong)",
+              background: "var(--surface-1)",
+              color: "var(--fg)",
+            }}
           >
             {pwLoading ? "Saving…" : "Save password"}
           </button>
@@ -321,7 +331,12 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={() => void onRevokeAll()}
-            className="shrink-0 rounded-lg border border-red-500/35 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/20"
+            className="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80"
+            style={{
+              borderColor: "rgba(248,113,113,0.35)",
+              background: "rgba(248,113,113,0.1)",
+              color: "var(--danger)",
+            }}
           >
             Sign out everywhere
           </button>

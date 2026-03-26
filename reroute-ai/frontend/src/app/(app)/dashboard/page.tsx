@@ -1,198 +1,56 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { ArrowRight, Loader2, MapPin, Radar } from "lucide-react";
 
-import { ReRouteDashboard } from "@/components/reroute/reroute-dashboard";
-import { getApiBase } from "@/lib/api-base";
-import type { AgentProposeResponse, TripDetailPublic } from "@/lib/api-types";
-import { clearStoredToken, getStoredToken } from "@/lib/auth-token";
-import { demoTripSnapshot } from "@/lib/demo-trip-snapshot";
-import {
-  apiAgentConfirm,
-  apiAgentPropose,
-  apiCreateTrip,
-  apiGetTripDetail,
-  apiListDisruptionEvents,
-  apiListTrips,
-  apiMonitorStatus,
-} from "@/lib/reroute-api";
-import type { UserPublic } from "@/lib/types";
+import { useRerouteSession } from "@/components/reroute-session-provider";
+import type { MonitorStatusResponse, TripPublic } from "@/lib/api-types";
+import { apiListTrips, apiMonitorStatus } from "@/lib/reroute-api";
 
-type TripLoadState = "idle" | "loading" | "empty" | "ready" | "error";
+export default function DashboardOverviewPage() {
+  const { user } = useRerouteSession();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [trips, setTrips] = useState<TripPublic[]>([]);
+  const [monitor, setMonitor] = useState<MonitorStatusResponse | null>(null);
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<UserPublic | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [userError, setUserError] = useState<string | null>(null);
-
-  const [token, setToken] = useState<string | null>(null);
-  const [tripLoad, setTripLoad] = useState<TripLoadState>("idle");
-  const [tripError, setTripError] = useState<string | null>(null);
-  const [tripId, setTripId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<TripDetailPublic | null>(null);
-  const [monitor, setMonitor] = useState<Awaited<ReturnType<typeof apiMonitorStatus>> | null>(null);
-  const [events, setEvents] = useState<Awaited<ReturnType<typeof apiListDisruptionEvents>>>([]);
-  const [proposal, setProposal] = useState<AgentProposeResponse | null>(null);
-  const [proposing, setProposing] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const [confirmError, setConfirmError] = useState<string | null>(null);
-  const [creatingDemo, setCreatingDemo] = useState(false);
-
-  const loadMe = useCallback(async () => {
-    const t = getStoredToken();
-    if (!t) {
-      router.replace("/");
-      return;
-    }
-    setToken(t);
-    setLoadingUser(true);
-    setUserError(null);
+  const load = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${getApiBase()}/users/me`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
-      if (res.status === 401) {
-        clearStoredToken();
-        router.replace("/");
-        return;
-      }
-      if (!res.ok) {
-        setUserError("Could not load your profile.");
-        return;
-      }
-      const data = (await res.json()) as UserPublic;
-      setUser(data);
-    } catch {
-      setUserError("Network error — is the API running?");
-    } finally {
-      setLoadingUser(false);
-    }
-  }, [router]);
-
-  const loadTripData = useCallback(async () => {
-    const t = getStoredToken();
-    if (!t) return;
-    setTripLoad("loading");
-    setTripError(null);
-    try {
-      const list = await apiListTrips(t);
-      if (list.length === 0) {
-        setTripId(null);
-        setDetail(null);
-        setMonitor(null);
-        setEvents([]);
-        setProposal(null);
-        setTripLoad("empty");
-        return;
-      }
-      const sorted = [...list].sort(
-        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-      );
-      const id = sorted[0].id;
-      setTripId(id);
-      const [d, m, ev] = await Promise.all([
-        apiGetTripDetail(t, id),
-        apiMonitorStatus(t),
-        apiListDisruptionEvents(t, id),
-      ]);
-      setDetail(d);
-      setMonitor(m);
-      setEvents(ev);
-      setTripLoad("ready");
+      const [list, mon] = await Promise.all([apiListTrips(), apiMonitorStatus()]);
+      setTrips([...list].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
+      setMonitor(mon);
     } catch (e) {
-      setTripError(e instanceof Error ? e.message : "Could not load trips.");
-      setTripLoad("error");
+      setError(e instanceof Error ? e.message : "Could not load overview.");
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    void loadMe();
-  }, [loadMe]);
+    void load();
+  }, [load]);
 
-  useEffect(() => {
-    if (!user || !token) return;
-    void loadTripData();
-  }, [user, token, loadTripData]);
-
-  const runPropose = useCallback(
-    async (simulateDisruption?: string | null) => {
-      const t = getStoredToken();
-      if (!t || !tripId) return;
-      setProposing(true);
-      setConfirmError(null);
-      try {
-        const res = await apiAgentPropose(t, tripId, simulateDisruption);
-        setProposal(res);
-      } catch (e) {
-        setConfirmError(e instanceof Error ? e.message : "Agent propose failed.");
-      } finally {
-        setProposing(false);
-      }
-    },
-    [tripId],
-  );
-
-  const runConfirm = useCallback(
-    async (selectedOptionId: string): Promise<boolean> => {
-      const t = getStoredToken();
-      if (!t || !proposal) return false;
-      setConfirming(true);
-      setConfirmError(null);
-      try {
-        await apiAgentConfirm(t, proposal.proposal_id, selectedOptionId);
-        setProposal(null);
-        await loadTripData();
-        return true;
-      } catch (e) {
-        setConfirmError(e instanceof Error ? e.message : "Confirm failed.");
-        return false;
-      } finally {
-        setConfirming(false);
-      }
-    },
-    [proposal, loadTripData],
-  );
-
-  const createDemoTrip = useCallback(async () => {
-    const t = getStoredToken();
-    if (!t) return;
-    setCreatingDemo(true);
-    setTripError(null);
-    try {
-      await apiCreateTrip(t, { title: "Demo trip", snapshot: demoTripSnapshot() });
-      await loadTripData();
-    } catch (e) {
-      setTripError(e instanceof Error ? e.message : "Could not create trip.");
-      setTripLoad("error");
-    } finally {
-      setCreatingDemo(false);
-    }
-  }, [loadTripData]);
-
-  function logout() {
-    clearStoredToken();
-    router.push("/");
-    router.refresh();
-  }
-
-  if (loadingUser) {
+  if (loading) {
     return (
-      <div className="flex min-h-screen flex-1 items-center justify-center bg-[#faf8f3] text-sm text-[#6b6558]">
-        Loading trip…
+      <div className="flex min-h-[50vh] items-center justify-center gap-2 text-sm text-zinc-500">
+        <Loader2 className="h-5 w-5 animate-spin text-emerald-500/70" aria-hidden />
+        Loading overview…
       </div>
     );
   }
 
-  if (userError) {
+  if (error) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <p className="text-sm text-red-600 dark:text-red-400">{userError}</p>
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <p className="text-sm text-red-400">{error}</p>
         <button
           type="button"
-          onClick={() => void loadMe()}
-          className="mt-4 text-sm font-medium text-zinc-900 underline dark:text-zinc-100"
+          onClick={() => void load()}
+          className="mt-4 text-sm font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
         >
           Retry
         </button>
@@ -200,42 +58,84 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user || !token) {
-    return null;
-  }
-
-  const userLabel = user.full_name?.trim() ? `${user.full_name} · ${user.email}` : user.email;
-
-  const bridgeState =
-    tripLoad === "loading" || tripLoad === "idle"
-      ? "loading"
-      : tripLoad === "empty"
-        ? "empty"
-        : tripLoad === "error"
-          ? "error"
-          : "ready";
+  const recent = trips.slice(0, 4);
+  const pending = monitor?.total_pending_proposals ?? 0;
 
   return (
-    <ReRouteDashboard
-      userLabel={userLabel}
-      onLogout={logout}
-      bridge={{
-        state: bridgeState,
-        errorMessage: tripError,
-        tripId,
-        detail,
-        monitor,
-        events,
-        proposal,
-        proposing,
-        confirming,
-        confirmError,
-        creatingDemo,
-        runPropose,
-        runConfirm,
-        refresh: loadTripData,
-        createDemoTrip,
-      }}
-    />
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      <h1 className="text-2xl font-semibold tracking-tight text-zinc-50">Overview</h1>
+      <p className="mt-1 text-sm text-zinc-500">Trips, monitoring, and agent activity across your workspace.</p>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        <Link
+          href="/trips"
+          className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-5 shadow-sm shadow-black/20 transition hover:border-zinc-700"
+        >
+          <div className="flex items-center gap-2 text-zinc-500">
+            <MapPin className="h-4 w-4 text-emerald-500/80" aria-hidden />
+            <span className="text-xs font-medium uppercase tracking-wide">Trips</span>
+          </div>
+          <p className="mt-2 text-3xl font-semibold tabular-nums text-zinc-50">{trips.length}</p>
+          <p className="mt-1 text-sm text-zinc-500">Itineraries in your account</p>
+        </Link>
+        <Link
+          href="/monitor"
+          className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-5 shadow-sm shadow-black/20 transition hover:border-zinc-700"
+        >
+          <div className="flex items-center gap-2 text-zinc-500">
+            <Radar className="h-4 w-4 text-emerald-500/80" aria-hidden />
+            <span className="text-xs font-medium uppercase tracking-wide">Monitor</span>
+          </div>
+          <p className="mt-2 text-3xl font-semibold tabular-nums text-amber-200">{pending}</p>
+          <p className="mt-1 text-sm text-zinc-500">Pending proposals (all trips)</p>
+        </Link>
+        <Link
+          href="/activity"
+          className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-5 shadow-sm shadow-black/20 transition hover:border-zinc-700"
+        >
+          <div className="flex items-center gap-2 text-zinc-500">
+            <span className="text-xs font-medium uppercase tracking-wide">Activity</span>
+          </div>
+          <p className="mt-2 text-sm font-medium text-zinc-100">Disruption timeline</p>
+          <p className="mt-1 text-sm text-zinc-500">Events across all trips</p>
+        </Link>
+      </div>
+
+      <section className="mt-10">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-sm font-semibold text-zinc-100">Recent trips</h2>
+          <Link
+            href="/trips"
+            className="inline-flex items-center gap-1 text-sm font-medium text-zinc-500 hover:text-emerald-400"
+          >
+            View all
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </div>
+        {recent.length === 0 ? (
+          <p className="mt-4 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/30 px-4 py-8 text-center text-sm text-zinc-500">
+            No trips yet.{" "}
+            <Link href="/trips" className="font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300">
+              Create one on the Trips page
+            </Link>
+            .
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y divide-zinc-800 overflow-hidden rounded-lg border border-zinc-800/80 bg-zinc-900/40">
+            {recent.map((t) => (
+              <li key={t.id}>
+                <Link
+                  href={`/trips/${t.id}`}
+                  className="flex items-center justify-between gap-4 px-4 py-3 text-sm transition hover:bg-zinc-800/40"
+                >
+                  <span className="font-medium text-zinc-100">{t.title?.trim() || "Untitled trip"}</span>
+                  <span className="shrink-0 text-zinc-500">Updated {t.updated_at.slice(0, 10)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

@@ -451,3 +451,7 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+.tg-dashboard-root--embedded {
+  min-height: 100%;
+}

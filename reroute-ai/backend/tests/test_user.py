@@ -15,7 +15,9 @@ def test_signup_login_me(client):
         json={"email": "alice@example.com", "password": "password12"},
     )
     assert r.status_code == 200
-    token = r.json()["access_token"]
+    body = r.json()
+    assert "expires_in" in body and "refresh_expires_in" in body
+    token = body["access_token"]
 
     r = client.get(
         "/api/users/me",

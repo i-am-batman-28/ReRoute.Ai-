@@ -52,10 +52,38 @@ class Settings(BaseSettings):
     celery_broker_url: str | None = None
     celery_result_backend: str | None = None
 
+    # Monitor cycle (Celery beat → worker.tasks.enqueue_monitor_cycle)
+    monitor_min_trip_interval_minutes: int = 15
+    monitor_batch_size: int = 40
+    monitor_max_trips_per_cycle: int = 400
+
+    # Password reset links (email)
+    password_reset_token_expire_minutes: int = 60
+    password_reset_frontend_path: str = "/reset-password"
+
+    # When True, app startup runs only Alembic upgrades (Postgres); skips create_all + sqlite patches.
+    database_use_alembic_only: bool = False
+
     # Auth
     jwt_secret_key: str = "change-me-use-long-random-string-in-production"
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24 * 7
+    # Short-lived access JWT; refresh via httpOnly cookie + /users/refresh
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 7
+    refresh_token_remember_days: int = 30
+    cookie_secure: bool = False
+    cookie_access_name: str = "reroute_access"
+    cookie_refresh_name: str = "reroute_refresh"
+    cookie_oauth_google_state_name: str = "reroute_oauth_google_state"
+    cookie_oauth_remember_name: str = "reroute_oauth_remember_me"
+
+    # Google OAuth (Web client). If client_id is unset, /auth/google/* returns 503.
+    google_oauth_client_id: str | None = None
+    google_oauth_client_secret: str | None = None
+    # Must match Authorized redirect URIs in Google Cloud exactly (e.g. http://localhost:8000/api/auth/google/callback).
+    google_oauth_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
+    # Browser redirect after successful Google sign-in (path will be appended if you pass next= query).
+    frontend_url: str = "http://localhost:3000"
 
     # External services (used by integrations/* and services)
     AVIATION_STACK_API_KEY: str | None = None

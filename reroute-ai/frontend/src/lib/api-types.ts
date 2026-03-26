@@ -5,6 +5,16 @@ export type UserPublic = {
   email: string;
   full_name: string | null;
   created_at: string;
+  avatar_url: string | null;
+  google_account_linked: boolean;
+};
+
+export type RefreshSessionPublic = {
+  id: string;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  remember_me: boolean;
 };
 
 export type TripPublic = {
@@ -69,6 +79,20 @@ export type AgentConfirmResponse = {
   message: string;
   duffel_order_id: string | null;
   email_sent: boolean | null;
+  email_queued?: boolean | null;
+};
+
+export type AgentProposeJobAccepted = {
+  task_id: string;
+  state: "queued";
+  poll_path: string;
+};
+
+export type AgentProposeJobStatus = {
+  task_id: string;
+  state: string;
+  result: AgentProposeResponse | null;
+  error: string | null;
 };
 
 export type DisruptionEventPublic = {
@@ -79,6 +103,10 @@ export type DisruptionEventPublic = {
   proposal_id: string | null;
   payload: Record<string, unknown>;
   created_at: string;
+};
+
+export type DisruptionEventActivityPublic = DisruptionEventPublic & {
+  trip_title: string | null;
 };
 
 export type MonitorTripSummary = {

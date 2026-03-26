@@ -36,10 +36,13 @@ class TripDAO(BaseDAO):
         return list(result.scalars().all())
 
     async def list_all(self, *, offset: int = 0, limit: int = 50) -> list[Trip]:
-        """Paginated list of all trips (monitor / background jobs)."""
+        """Paginated list of all trips (monitor / background jobs).
+
+        Oldest-updated first so trips that are not constantly edited still get scanned when a per-cycle cap applies.
+        """
         q = (
             select(Trip)
-            .order_by(Trip.updated_at.desc())
+            .order_by(Trip.updated_at.asc())
             .offset(max(offset, 0))
             .limit(min(max(limit, 1), 500))
         )

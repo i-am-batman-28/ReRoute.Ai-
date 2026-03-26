@@ -5,6 +5,7 @@ import type {
   AgentProposeJobAccepted,
   AgentProposeJobStatus,
   AgentProposeResponse,
+  DisruptionEventActivityPublic,
   DisruptionEventPublic,
   MonitorStatusResponse,
   RefreshSessionPublic,
@@ -119,7 +120,7 @@ export async function apiResetPassword(token: string, newPassword: string): Prom
 
 export async function apiListTrips(): Promise<TripPublic[]> {
   const res = await authFetch(`${getApiBase()}/trips`, { headers: jsonHeaders });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<TripPublic[]>;
 }
 
@@ -129,7 +130,7 @@ export async function apiCreateTrip(body: { title?: string | null; snapshot: Rec
     headers: jsonHeaders,
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<TripPublic>;
 }
 
@@ -142,7 +143,7 @@ export async function apiUpdateTrip(
     headers: jsonHeaders,
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<TripPublic>;
 }
 
@@ -151,14 +152,14 @@ export async function apiDeleteTrip(tripId: string): Promise<void> {
     method: "DELETE",
     headers: jsonHeaders,
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
 }
 
 export async function apiGetTripDetail(tripId: string): Promise<TripDetailPublic> {
   const res = await authFetch(`${getApiBase()}/trips/${encodeURIComponent(tripId)}/detail`, {
     headers: jsonHeaders,
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<TripDetailPublic>;
 }
 
@@ -183,19 +184,18 @@ export async function apiAgentPropose(
       async_mode: Boolean(options?.asyncMode),
     }),
   });
-  const text = await res.text();
   if (res.status === 202) {
-    return { mode: "async", job: JSON.parse(text) as AgentProposeJobAccepted };
+    return { mode: "async", job: (await res.json()) as AgentProposeJobAccepted };
   }
-  if (!res.ok) throw new Error(text);
-  return { mode: "sync", data: JSON.parse(text) as AgentProposeResponse };
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
+  return { mode: "sync", data: (await res.json()) as AgentProposeResponse };
 }
 
 export async function apiAgentProposeJobStatus(taskId: string): Promise<AgentProposeJobStatus> {
   const res = await authFetch(`${getApiBase()}/agent/propose/jobs/${encodeURIComponent(taskId)}`, {
     headers: jsonHeaders,
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<AgentProposeJobStatus>;
 }
 
@@ -205,8 +205,16 @@ export async function apiAgentConfirm(proposalId: string, selectedOptionId: stri
     headers: jsonHeaders,
     body: JSON.stringify({ proposal_id: proposalId, selected_option_id: selectedOptionId }),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<AgentConfirmResponse>;
+}
+
+/** Recent events across all trips for the current user (single request). */
+export async function apiListMyActivityEvents(limit = 200): Promise<DisruptionEventActivityPublic[]> {
+  const q = new URLSearchParams({ limit: String(limit) });
+  const res = await authFetch(`${getApiBase()}/disruptions/events?${q}`, { headers: jsonHeaders });
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
+  return res.json() as Promise<DisruptionEventActivityPublic[]>;
 }
 
 export async function apiListDisruptionEvents(tripId: string, limit = 100): Promise<DisruptionEventPublic[]> {
@@ -215,12 +223,12 @@ export async function apiListDisruptionEvents(tripId: string, limit = 100): Prom
     `${getApiBase()}/disruptions/trips/${encodeURIComponent(tripId)}/events?${q}`,
     { headers: jsonHeaders },
   );
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<DisruptionEventPublic[]>;
 }
 
 export async function apiMonitorStatus(): Promise<MonitorStatusResponse> {
   const res = await authFetch(`${getApiBase()}/monitor/status`, { headers: jsonHeaders });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<MonitorStatusResponse>;
 }

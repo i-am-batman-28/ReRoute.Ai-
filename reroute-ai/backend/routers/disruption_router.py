@@ -10,10 +10,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from deps import get_current_user
 from model.user_model import User
-from schema.disruption_schemas import DisruptionEventPublic
+from schema.disruption_schemas import DisruptionEventActivityPublic, DisruptionEventPublic
 from service import disruption_service
 
 router = APIRouter(prefix="/disruptions", tags=["disruptions"])
+
+
+@router.get(
+    "/events",
+    response_model=list[DisruptionEventActivityPublic],
+    status_code=status.HTTP_200_OK,
+)
+async def list_my_activity_events(
+    session: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(get_current_user)],
+    limit: Annotated[int, Query(ge=1, le=500)] = 200,
+) -> list[DisruptionEventActivityPublic]:
+    """Recent disruption events across all of the current user's trips (single query)."""
+    return await disruption_service.list_activity_events_for_user(
+        session=session,
+        user_id=current.id,
+        limit=limit,
+    )
 
 
 @router.get(

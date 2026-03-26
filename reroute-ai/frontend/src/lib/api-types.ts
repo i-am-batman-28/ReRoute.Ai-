@@ -105,6 +105,10 @@ export type DisruptionEventPublic = {
   created_at: string;
 };
 
+export type DisruptionEventActivityPublic = DisruptionEventPublic & {
+  trip_title: string | null;
+};
+
 export type MonitorTripSummary = {
   trip_id: string;
   title: string | null;

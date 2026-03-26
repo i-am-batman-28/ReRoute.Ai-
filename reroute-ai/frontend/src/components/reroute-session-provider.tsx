@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { getApiBase } from "@/lib/api-base";
 import { authFetch } from "@/lib/auth-fetch";
-import { apiLogout } from "@/lib/reroute-api";
+import { clearStoredToken } from "@/lib/auth-token";
+import { apiLogout, apiErrorMessage } from "@/lib/reroute-api";
 import type { UserPublic } from "@/lib/api-types";
 
 function coerceUser(raw: unknown): UserPublic {
@@ -22,7 +23,6 @@ function coerceUser(raw: unknown): UserPublic {
     google_account_linked: Boolean(u.google_account_linked),
   };
 }
-import { clearStoredToken } from "@/lib/auth-token";
 
 type RerouteSessionContextValue = {
   user: UserPublic | null;
@@ -55,7 +55,7 @@ export function RerouteSessionProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (!res.ok) {
-        setError(await res.text());
+        setError(await apiErrorMessage(res));
         setUser(null);
         setLoading(false);
         return;

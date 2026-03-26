@@ -70,6 +70,9 @@ async def run_monitor_cycle(*, session: AsyncSession) -> dict[str, int]:
             break
         offset += len(trips)
 
+        trip_ids = [t.id for t in trips]
+        latest_scans = await ev_dao.latest_by_kind_for_trip_ids(trip_ids=trip_ids, kind="monitor_scan")
+
         for trip in trips:
             if processed >= cap:
                 break
@@ -82,7 +85,7 @@ async def run_monitor_cycle(*, session: AsyncSession) -> dict[str, int]:
                 skipped_no_flight += 1
                 continue
 
-            last_scan = await ev_dao.latest_for_trip_by_kind(trip_id=trip.id, kind="monitor_scan")
+            last_scan = latest_scans.get(trip.id)
             if last_scan and last_scan.created_at:
                 age = datetime.now(UTC) - _naive_utc(last_scan.created_at)
                 if age < min_gap:

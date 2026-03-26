@@ -5,11 +5,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { useRerouteSession } from "@/components/reroute-session-provider";
-import type { DisruptionEventPublic, TripPublic } from "@/lib/api-types";
+import type { TripPublic } from "@/lib/api-types";
 import { buildSnapshotTripSummary } from "@/lib/reroute-display";
-import { apiListDisruptionEvents, apiListTrips } from "@/lib/reroute-api";
+import { apiListMyActivityEvents, apiListTrips } from "@/lib/reroute-api";
 
-type Row = DisruptionEventPublic & { tripTitle: string | null; route: string | null };
+type Row = {
+  id: string;
+  trip_id: string;
+  kind: string;
+  disruption_type: string | null;
+  proposal_id: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+  tripTitle: string | null;
+  route: string | null;
+};
 
 export default function ActivityPage() {
   const { user } = useRerouteSession();
@@ -22,33 +32,23 @@ export default function ActivityPage() {
     setLoading(true);
     setError(null);
     try {
-      const trips = await apiListTrips();
-      if (trips.length === 0) {
-        setRows([]);
-        return;
-      }
+      const [trips, events] = await Promise.all([apiListTrips(), apiListMyActivityEvents(300)]);
       const byId = new Map<string, TripPublic>(trips.map((tr) => [tr.id, tr]));
-      const batches = await Promise.all(
-        trips.map(async (tr) => {
-          const ev = await apiListDisruptionEvents(tr.id, 200);
-          return ev.map((e) => ({
-            ...e,
-            tripTitle: tr.title,
-          }));
-        }),
-      );
-      const merged = batches.flat().sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
       setRows(
-        merged.map((r) => {
-          const tr = byId.get(r.trip_id);
+        events.map((ev) => {
+          const tr = byId.get(ev.trip_id);
           const route = tr?.snapshot
             ? buildSnapshotTripSummary(tr.snapshot as Record<string, unknown>).primaryRoute
             : null;
           return {
-            ...r,
-            tripTitle: tr?.title ?? r.tripTitle,
+            id: ev.id,
+            trip_id: ev.trip_id,
+            kind: ev.kind,
+            disruption_type: ev.disruption_type,
+            proposal_id: ev.proposal_id,
+            payload: ev.payload,
+            created_at: ev.created_at,
+            tripTitle: tr?.title ?? ev.trip_title,
             route,
           };
         }),

@@ -30,6 +30,9 @@ export type RankedOptionDisplay = {
   modalityLabel: string;
   bookingRefShort: string;
   optionTitle: string;
+  carrierName: string | null;
+  carrierLogo: string | null;
+  flightNumber: string | null;
 };
 
 /** Structured labels for cards — avoids one cluttered `summary` line. */
@@ -85,7 +88,21 @@ export function getRankedOptionDisplay(opt: RankedOptionDTO, index: number): Ran
         ? `Ref …${id.slice(-6)}`
         : id;
 
-  const optionTitle = `${route}${priceLabel ? ` · ${priceLabel}` : ""}`;
+  // Carrier info from legs
+  const legCarrier = typeof leg?.carrier === "string" ? leg.carrier : null;
+  const legFlightNum = typeof leg?.flight_number === "string" ? leg.flight_number : null;
+  let carrierName: string | null = legCarrier;
+  let carrierLogo: string | null = null;
+  try {
+    const { extractAirlineCode, findAirlineByIata } = require("@/lib/airlines");
+    const code = legFlightNum ? extractAirlineCode(legFlightNum) : null;
+    if (code) {
+      const a = findAirlineByIata(code);
+      if (a) { carrierName = carrierName || a.name; carrierLogo = a.logo; }
+    }
+  } catch { /* ok */ }
+
+  const optionTitle = `${carrierName ? `${carrierName} · ` : ""}${route}${priceLabel ? ` · ${priceLabel}` : ""}`;
 
   return {
     route,
@@ -94,6 +111,9 @@ export function getRankedOptionDisplay(opt: RankedOptionDTO, index: number): Ran
     modalityLabel,
     bookingRefShort,
     optionTitle,
+    carrierName,
+    carrierLogo,
+    flightNumber: legFlightNum,
   };
 }
 

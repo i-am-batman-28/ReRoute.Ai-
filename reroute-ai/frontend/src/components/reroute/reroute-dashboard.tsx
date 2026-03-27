@@ -524,6 +524,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
   const showSeparateRebookingCard =
     !isApiReady ||
     hasRankedOptions ||
+    Boolean(bridge?.proposal) ||
     Boolean(bridge?.proposing) ||
     Boolean(bridge?.confirming);
 
@@ -1782,8 +1783,10 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                               </div>
                             ) : null}
                             <div className="flex min-w-0 flex-1 gap-3">
-                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/80 text-zinc-300">
-                                {optionModalityIcon(opt.modality)}
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-zinc-700 bg-zinc-800/80 text-zinc-300">
+                                {d.carrierLogo ? (
+                                  <img src={d.carrierLogo} alt={d.carrierName ?? ""} className="h-8 w-8 rounded object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
+                                ) : optionModalityIcon(opt.modality)}
                               </div>
                               <div className="min-w-0 flex-1 space-y-3">
                                 <div>
@@ -1792,6 +1795,9 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                                     {isBest ? <span className="ml-2 text-[color:var(--primary)]">Recommended</span> : null}
                                   </p>
                                   <p className="mt-1 text-lg font-semibold tracking-tight text-white">{d.route}</p>
+                                  {d.carrierName ? (
+                                    <p className="mt-0.5 text-xs text-zinc-400">{d.carrierName}{d.flightNumber ? ` · ${d.flightNumber}` : ""}</p>
+                                  ) : null}
                                 </div>
                                 <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                   <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2">
@@ -1847,11 +1853,17 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     ) : (
                       <div className="px-4 py-8">
                         <div className="rounded-xl border border-dashed border-zinc-700/80 bg-zinc-950/30 p-5 text-center transition-colors duration-200 sm:text-left">
-                          <p className="text-sm font-semibold text-zinc-200">No options yet</p>
-                          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                            Tap Find flights on your live itinerary to see alternatives and what else on your trip might
-                            need attention.
+                          <p className="text-sm font-semibold text-zinc-200">
+                            {bridge?.proposal ? "No alternatives found" : "No options yet"}
                           </p>
+                          <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                            {bridge?.proposal
+                              ? "The agent searched but couldn't find rebooking options. This can happen with past dates or limited inventory. Try using the simulate buttons or editing the trip with a future date."
+                              : "Tap Find flights on your live itinerary to see alternatives and what else on your trip might need attention."}
+                          </p>
+                          {bridge?.proposal?.disruption_summary ? (
+                            <p className="mt-2 text-xs font-medium text-amber-400/70">{bridge.proposal.disruption_summary}</p>
+                          ) : null}
                           <ul className="mx-auto mt-4 max-w-md space-y-2 text-left text-xs text-zinc-500 sm:mx-0">
                             <li className="flex gap-2">
                               <span className="text-[color:var(--primary)]" aria-hidden>

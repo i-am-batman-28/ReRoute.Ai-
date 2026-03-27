@@ -155,6 +155,24 @@ export async function apiDeleteTrip(tripId: string): Promise<void> {
   if (!res.ok) throw new Error(await apiErrorMessage(res));
 }
 
+export type TicketExtractResult = {
+  ok: boolean;
+  extracted_raw: Record<string, string>;
+  entities: Record<string, unknown>;
+  message: string;
+};
+
+export async function apiExtractFromTicket(file: File): Promise<TicketExtractResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await authFetch(`${getApiBase()}/trips/extract-from-ticket`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) throw new Error(await apiErrorMessage(res));
+  return res.json() as Promise<TicketExtractResult>;
+}
+
 export async function apiGetTripDetail(tripId: string): Promise<TripDetailPublic> {
   const res = await authFetch(`${getApiBase()}/trips/${encodeURIComponent(tripId)}/detail`, {
     headers: jsonHeaders,

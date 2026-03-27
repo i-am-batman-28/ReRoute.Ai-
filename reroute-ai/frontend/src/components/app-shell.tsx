@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, LayoutDashboard, Loader2, LogOut, MapPin, Radar, Settings } from "lucide-react";
+import { Activity, LayoutDashboard, Loader2, LogOut, MapPin, Plane, Radar, Settings } from "lucide-react";
 
 import { useRerouteSession } from "@/components/reroute-session-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -85,15 +85,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-[color:var(--bg)]">
-      <header className="border-b border-[color:var(--stroke)] bg-[color:var(--bg)]">
+      <header className="sticky top-0 z-40 border-b border-[color:var(--stroke)] bg-[color:var(--bg)]/95 backdrop-blur-md">
         <div className="mx-auto grid h-14 w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4">
           <div className="flex items-center justify-start">
             <Link
               href="/dashboard"
-              className="shrink-0 font-serif text-base font-semibold tracking-tight text-[color:var(--fg)]"
-              style={{ fontFamily: "var(--tg-playfair), Georgia, serif" }}
+              className="flex items-center gap-2 font-semibold tracking-tight text-[color:var(--fg)]"
             >
-              ReRoute <em className="not-italic text-[color:var(--primary)]">AI</em>
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-lg ring-1"
+                style={{ background: "var(--primary-soft)", color: "var(--primary)", borderColor: "var(--primary-soft)" }}
+              >
+                <Plane className="h-4 w-4" aria-hidden />
+              </span>
+              <span>
+                ReRoute<span style={{ color: "var(--primary)" }}>.AI</span>
+              </span>
             </Link>
           </div>
 
@@ -112,7 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[color:var(--subtle)] hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)]"
             >
               <LogOut className="h-4 w-4 shrink-0" aria-hidden />
-              <span className="hidden sm:inline">Log out</span>
+              <span className="hidden sm:inline"></span>
             </button>
           </div>
         </div>

@@ -46,7 +46,7 @@ export default function MonitorPage() {
 
   if (error) {
     return (
-      <div className="w-full px-6 py-16 text-center">
+      <div className="mx-auto w-full max-w-6xl px-6 py-16 text-center">
         <p className="text-sm text-red-400">{error}</p>
         <button
           type="button"
@@ -62,7 +62,7 @@ export default function MonitorPage() {
   const trips = data?.trips ?? [];
 
   return (
-    <div className="w-full px-6 py-8">
+    <div className="mx-auto w-full max-w-6xl px-6 py-8">
       <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--fg)]">Monitor</h1>
       <p className="mt-1 text-sm text-[color:var(--subtle)]">
         Live summary of trips under watch, pending proposals, and last disruption signals.

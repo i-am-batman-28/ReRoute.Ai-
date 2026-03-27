@@ -207,7 +207,7 @@ export function TripForm({
 
   if (loading || !user?.email) {
     return (
-      <div className="mx-auto flex max-w-lg flex-col items-center justify-center gap-3 px-4 py-24 text-zinc-400">
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-3 px-6 py-24 text-zinc-400">
         <Loader2 className="h-8 w-8 animate-spin text-[color:var(--primary)]" aria-hidden />
         <p className="text-sm">Loading…</p>
       </div>
@@ -216,7 +216,7 @@ export function TripForm({
 
   if (!user?.email) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-8 sm:px-6">
+      <div className="mx-auto w-full max-w-6xl px-6 py-8">
         <p className="text-sm text-red-400">{sessionError ?? "Sign in required."}</p>
         <Link href="/" className="mt-4 inline-block text-sm text-[color:var(--primary)] underline">
           Back to sign in
@@ -227,7 +227,7 @@ export function TripForm({
 
   if (mode === "edit" && seedLoading) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center justify-center gap-3 px-4 py-24 text-zinc-400">
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center gap-3 px-6 py-24 text-zinc-400">
         <Loader2 className="h-8 w-8 animate-spin text-[color:var(--primary)]" aria-hidden />
         <p className="text-sm">Loading trip…</p>
       </div>
@@ -236,7 +236,7 @@ export function TripForm({
 
   if (mode === "edit" && seedError) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <div className="mx-auto w-full max-w-6xl px-6 py-8">
         <p className="text-sm text-red-400">{seedError}</p>
         <Link href={backHref} className="mt-4 inline-block text-sm text-[color:var(--primary)] underline">
           Back
@@ -255,7 +255,7 @@ export function TripForm({
       : null;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-6xl px-6 py-8">
       <Link
         href={backHref}
         className="text-sm font-medium text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline"
@@ -265,7 +265,8 @@ export function TripForm({
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white">{pageTitle}</h1>
       <p className="mt-1 text-sm text-zinc-500">{pageDescription}</p>
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-10" noValidate aria-describedby={error ? "trip-form-error" : undefined}>
+      <div className="rr-card mt-8 rounded-2xl border border-[color:var(--stroke)] bg-[color:var(--surface-0)] p-6 shadow-sm">
+      <form onSubmit={onSubmit} className="space-y-10" noValidate aria-describedby={error ? "trip-form-error" : undefined}>
         <section className="space-y-4">
           <h2 className={sectionTitle}>Trip</h2>
           <div>
@@ -688,6 +689,7 @@ export function TripForm({
           </Link>
         </div>
       </form>
+      </div>
     </div>
   );
 }

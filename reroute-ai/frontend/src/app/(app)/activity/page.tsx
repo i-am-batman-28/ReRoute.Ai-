@@ -77,7 +77,7 @@ export default function ActivityPage() {
 
   if (error) {
     return (
-      <div className="w-full px-6 py-16 text-center">
+      <div className="mx-auto w-full max-w-6xl px-6 py-16 text-center">
         <p className="text-sm text-red-400">{error}</p>
         <button
           type="button"
@@ -91,7 +91,7 @@ export default function ActivityPage() {
   }
 
   return (
-    <div className="w-full px-6 py-8">
+    <div className="mx-auto w-full max-w-6xl px-6 py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--fg)]">Activity</h1>

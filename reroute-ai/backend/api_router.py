@@ -10,6 +10,7 @@ from routers import (
     trip_router,
     user_router,
     public_router,
+    ws_router,
 )
 
 api_router = APIRouter()
@@ -22,4 +23,4 @@ api_router.include_router(user_router.router, tags=["users"])
 api_router.include_router(disruption_router.router, tags=["disruptions"])
 api_router.include_router(monitor_router.router, tags=["monitor"])
 api_router.include_router(public_router.router)
-
+api_router.include_router(ws_router.router)

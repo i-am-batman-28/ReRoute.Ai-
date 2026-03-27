@@ -62,6 +62,34 @@ def run_agent_propose_task(
     return asyncio.run(_run())
 
 
+@celery_app.task(name="reroute.agent.autonomous_disruption", ignore_result=True)
+def run_autonomous_disruption_task(
+    *,
+    user_id: str,
+    trip_id: str,
+    disruption_type: str,
+    flight_status: dict | None = None,
+) -> dict:
+    """Autonomous loop: detect → propose → auto-confirm (if enabled) → notify."""
+    from database import get_session_factory
+    from service.agent_service import autonomous_disruption_handler
+
+    async def _run() -> dict:
+        factory = get_session_factory()
+        async with factory() as session:
+            return await autonomous_disruption_handler(
+                session=session,
+                user_id=user_id,
+                trip_id=trip_id,
+                disruption_type=disruption_type,
+                flight_status=flight_status or {},
+            )
+
+    result = asyncio.run(_run())
+    logger.info("autonomous_disruption_task_done", extra={"trip_id": trip_id, "result": result})
+    return result
+
+
 @celery_app.task(name="reroute.agent.release_stale_applying")
 def release_stale_applying_task() -> int:
     """Periodic: move long-lived `applying` proposals back to `pending` for retry."""

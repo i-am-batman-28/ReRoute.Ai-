@@ -57,10 +57,18 @@ export default function SettingsPage() {
   const [unlinkLoading, setUnlinkLoading] = useState(false);
   const [unlinkErr, setUnlinkErr] = useState<string | null>(null);
 
+  const [autoRebook, setAutoRebook] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [autoMsg, setAutoMsg] = useState<string | null>(null);
+  const [autoErr, setAutoErr] = useState<string | null>(null);
+  const [autoLoading, setAutoLoading] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     setFullName(user.full_name ?? "");
     setAvatarUrl(user.avatar_url ?? "");
+    setAutoRebook(user.auto_rebook ?? false);
+    setPhoneNumber(user.phone_number ?? "");
   }, [user]);
 
   const loadSessions = useCallback(async () => {
@@ -226,6 +234,79 @@ export default function SettingsPage() {
             }}
           >
             {profileLoading ? "Saving…" : "Save profile"}
+          </button>
+        </form>
+      </section>
+
+      <section className="mb-8 rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-5 shadow-sm shadow-black/20">
+        <h2 className="text-sm font-semibold text-zinc-100">Autonomous Agent</h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          When a disruption is detected, the AI agent can automatically find and book the best alternative for you.
+        </p>
+        <form
+          className="mt-4 space-y-4"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setAutoMsg(null);
+            setAutoErr(null);
+            setAutoLoading(true);
+            try {
+              await apiPatchMe({ auto_rebook: autoRebook, phone_number: phoneNumber.trim() || null });
+              await reload();
+              setAutoMsg("Autonomous settings saved.");
+            } catch (err) {
+              setAutoErr(err instanceof Error ? err.message : "Save failed");
+            } finally {
+              setAutoLoading(false);
+            }
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoRebook}
+              onClick={() => setAutoRebook(!autoRebook)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                autoRebook ? "bg-[color:var(--primary)]" : "bg-zinc-700"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  autoRebook ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+            <div>
+              <p className="text-sm font-medium text-zinc-100">Auto-rebook on disruption</p>
+              <p className="text-xs text-zinc-500">
+                {autoRebook
+                  ? "The agent will automatically book the best option when your flight is cancelled, diverted, or delayed 60+ minutes."
+                  : "You'll receive an email with options to choose from manually."}
+              </p>
+            </div>
+          </div>
+          <div>
+            <label htmlFor="settings-phone" className={labelClass}>
+              Phone number (for SMS — optional)
+            </label>
+            <input
+              id="settings-phone"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className={inputClass}
+              placeholder="+1 555 123 4567"
+            />
+          </div>
+          {autoErr ? <p className="text-sm text-red-400" role="alert">{autoErr}</p> : null}
+          {autoMsg ? <p className="text-sm text-[color:var(--primary)]">{autoMsg}</p> : null}
+          <button
+            type="submit"
+            disabled={autoLoading}
+            className="rounded-lg border px-4 py-2 text-sm font-semibold transition hover:opacity-80 disabled:opacity-50"
+            style={{ borderColor: "var(--stroke-strong)", background: "var(--surface-1)", color: "var(--fg)" }}
+          >
+            {autoLoading ? "Saving…" : "Save autonomous settings"}
           </button>
         </form>
       </section>

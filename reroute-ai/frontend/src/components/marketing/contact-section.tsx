@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import emailjs from "@emailjs/browser";
+
+const EMAILJS_SEND_URL = "https://api.emailjs.com/api/v1.0/email/send";
 
 export function ContactSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,12 +23,30 @@ export function ContactSection() {
     };
 
     try {
-      await emailjs.send(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "YOUR_SERVICE_ID",
-        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "YOUR_TEMPLATE_ID",
-        data,
-        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "YOUR_PUBLIC_KEY"
-      );
+      const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "YOUR_SERVICE_ID";
+      const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "YOUR_TEMPLATE_ID";
+      const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "YOUR_PUBLIC_KEY";
+
+      const res = await fetch(EMAILJS_SEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          service_id: serviceId,
+          template_id: templateId,
+          user_id: publicKey,
+          template_params: {
+            user_name: String(data.user_name ?? ""),
+            user_email: String(data.user_email ?? ""),
+            message: String(data.message ?? ""),
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `EmailJS: ${res.status}`);
+      }
+
       setSuccessMsg("Message sent successfully! We will get back to you soon.");
       (e.target as HTMLFormElement).reset();
     } catch (err) {

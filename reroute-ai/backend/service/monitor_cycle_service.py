@@ -18,6 +18,37 @@ from integrations.location_resolver import resolve_coords
 logger = logging.getLogger(__name__)
 
 
+def _safe_int(v: object) -> int | None:
+    try:
+        return int(v) if v is not None else None  # type: ignore[arg-type]
+    except Exception:
+        return None
+
+
+def _enqueue_autonomous_handler(
+    *,
+    user_id: str,
+    trip_id: str,
+    disruption_type: str,
+    flight_status: dict[str, Any],
+) -> None:
+    """Enqueue the autonomous disruption handler as a Celery task."""
+    try:
+        from worker.tasks import run_autonomous_disruption_task
+        run_autonomous_disruption_task.delay(
+            user_id=user_id,
+            trip_id=trip_id,
+            disruption_type=disruption_type,
+            flight_status=flight_status,
+        )
+        logger.info(
+            "autonomous_handler_enqueued",
+            extra={"trip_id": trip_id, "disruption_type": disruption_type},
+        )
+    except Exception:
+        logger.exception("autonomous_handler_enqueue_failed")
+
+
 _SEVERE_WEATHER_CODES = {65, 75, 82, 85, 86, 95, 96, 99}
 
 
@@ -215,6 +246,22 @@ async def run_monitor_cycle(*, session: AsyncSession) -> dict[str, int]:
                     },
                 )
                 alerts += 1
+
+                # ── AUTONOMOUS AGENT TRIGGER ──
+                # Only trigger for real disruptions (not minor delays or weather-only changes)
+                is_real_disruption = disruption_type in ("cancelled", "diverted") or (
+                    disruption_type == "delayed" and (_safe_int(flight_status.get("delay_minutes")) or 0) >= 60
+                )
+                if is_real_disruption:
+                    try:
+                        _enqueue_autonomous_handler(
+                            user_id=trip.user_id,
+                            trip_id=trip.id,
+                            disruption_type=disruption_type,
+                            flight_status=flight_status,
+                        )
+                    except Exception:
+                        logger.exception("autonomous_handler_enqueue_failed", extra={"trip_id": trip.id})
 
         await session.commit()
 

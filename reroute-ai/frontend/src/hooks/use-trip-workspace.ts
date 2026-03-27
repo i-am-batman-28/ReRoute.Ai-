@@ -3,12 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { AgentConfirmResponse, AgentProposeResponse, TripDetailPublic } from "@/lib/api-types";
-import { demoTripSnapshot } from "@/lib/demo-trip-snapshot";
 import {
   apiAgentConfirm,
   apiAgentPropose,
   apiAgentProposeJobStatus,
-  apiCreateTrip,
   apiGetTripDetail,
   apiListDisruptionEvents,
   apiMonitorStatus,
@@ -203,29 +201,4 @@ export function useTripWorkspace(tripId: string) {
     refresh: loadTripData,
     dismissProposal,
   };
-}
-
-/** Create demo trip from trips list page (uses session). */
-export function useCreateDemoTrip(onSuccess: () => Promise<void>) {
-  const { user } = useRerouteSession();
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const createDemoTrip = useCallback(async () => {
-    if (!user) return;
-    setCreating(true);
-    setError(null);
-    try {
-      await apiCreateTrip({ title: "Demo trip", snapshot: demoTripSnapshot() });
-      await onSuccess();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not create demo trip.");
-    } finally {
-      setCreating(false);
-    }
-  }, [user, onSuccess]);
-
-  const clearError = useCallback(() => setError(null), []);
-
-  return { createDemoTrip, creating, error, clearError };
 }

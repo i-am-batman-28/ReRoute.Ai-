@@ -31,6 +31,8 @@ class UserPublic(BaseModel):
     created_at: datetime.datetime
     avatar_url: str | None = None
     google_account_linked: bool = False
+    auto_rebook: bool = False
+    phone_number: str | None = None
 
 
 def user_to_public(user: User) -> UserPublic:
@@ -42,6 +44,8 @@ def user_to_public(user: User) -> UserPublic:
         created_at=created,
         avatar_url=user.avatar_url,
         google_account_linked=user.google_sub is not None,
+        auto_rebook=bool(getattr(user, "auto_rebook", False)),
+        phone_number=getattr(user, "phone_number", None),
     )
 
 
@@ -68,6 +72,8 @@ class ResetPasswordRequest(BaseModel):
 class UserUpdateRequest(BaseModel):
     full_name: str | None = Field(None, max_length=255)
     avatar_url: str | None = Field(None, max_length=512)
+    auto_rebook: bool | None = Field(None, description="Auto-rebook on disruption detection")
+    phone_number: str | None = Field(None, max_length=20, description="Phone for SMS notifications")
 
 
 class SetPasswordRequest(BaseModel):

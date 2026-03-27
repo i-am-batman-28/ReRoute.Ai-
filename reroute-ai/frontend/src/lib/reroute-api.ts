@@ -47,7 +47,7 @@ export async function apiLogout(): Promise<void> {
   if (!res.ok) throw new Error(await apiErrorMessage(res));
 }
 
-export async function apiPatchMe(body: { full_name?: string | null; avatar_url?: string | null }): Promise<UserPublic> {
+export async function apiPatchMe(body: { full_name?: string | null; avatar_url?: string | null; auto_rebook?: boolean; phone_number?: string | null }): Promise<UserPublic> {
   const res = await authFetch(`${getApiBase()}/users/me`, {
     method: "PATCH",
     headers: jsonHeaders,

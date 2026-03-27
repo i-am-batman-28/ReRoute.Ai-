@@ -7,6 +7,8 @@ export type UserPublic = {
   created_at: string;
   avatar_url: string | null;
   google_account_linked: boolean;
+  auto_rebook: boolean;
+  phone_number: string | null;
 };
 
 export type RefreshSessionPublic = {

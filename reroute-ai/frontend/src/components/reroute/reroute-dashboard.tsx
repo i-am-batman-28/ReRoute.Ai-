@@ -262,7 +262,7 @@ function apiBannerCopy(
   if (ro.length > 0) {
     return {
       title: `Rebooking options ready (${ro.length})`,
-      sub: "Review ranked alternatives below.",
+      sub: "Review your best alternatives below.",
     };
   }
   const dis = [...b.events]
@@ -278,7 +278,7 @@ function apiBannerCopy(
           : `Recorded disruption: ${dis.disruption_type ?? dis.kind}`;
     return {
       title,
-      sub: "The agent used this when you last ran a proposal. Run the agent again to refresh ranked options.",
+      sub: "Tap Find flights again to refresh options with the latest status.",
     };
   }
   return null;
@@ -410,7 +410,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
   const tripStatusLine = useMemo(() => {
     if (!isApiReady || !bridge) return null;
     if (bridge.proposing) {
-      return { tone: "active" as const, text: "Agent is analyzing your itinerary and ranking options…" };
+      return { tone: "active" as const, text: "Finding your best flight options…" };
     }
     if (bridge.confirming) {
       return { tone: "active" as const, text: "Confirming your selected path…" };
@@ -419,13 +419,13 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     if (ro > 0 && !confirmedOnceForTrip) {
       return {
         tone: "ok" as const,
-        text: `Choose one of ${ro} ranked rebook path${ro === 1 ? "" : "s"}, then confirm.`,
+        text: `Pick one of ${ro} option${ro === 1 ? "" : "s"}, then confirm to book.`,
       };
     }
     if (confirmedOnceForTrip) {
       return {
         tone: "ok" as const,
-        text: "Rebooking confirmed — review downstream ripple and compensation when ready.",
+        text: "Rebooking confirmed — review trip impact and compensation when you’re ready.",
       };
     }
     const dis = [...bridge.events]
@@ -439,12 +439,12 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
           : (dis.disruption_type ?? dis.kind);
       return {
         tone: "warn" as const,
-        text: `Disruption recorded (${disLabel}). Run the agent for ranked options.`,
+        text: `Disruption recorded (${disLabel}). Tap Find flights to see your best options.`,
       };
     }
     return {
       tone: "muted" as const,
-      text: "No open proposal yet — run the agent to generate ranked options from live status.",
+      text: "Tap Find flights to compare options using the latest live status.",
     };
   }, [bridge, confirmedOnceForTrip, isApiReady]);
 
@@ -596,7 +596,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
         id: "ph-api",
         time: "—",
         dot: "b" as LogDot,
-        children: <>No audit events yet. Run the agent to populate traces.</>,
+        children: <>No activity yet. Run Find flights once to see a full trace here.</>,
       },
     ];
   }, [isApiReady, bridge]);
@@ -680,7 +680,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     if (lastProposeErrToastRef.current === err) return;
     lastProposeErrToastRef.current = err;
     queueMicrotask(() => {
-      pushToast(<AlertTriangle className="h-4 w-4" aria-hidden />, "Agent run failed", err);
+      pushToast(<AlertTriangle className="h-4 w-4" aria-hidden />, "Couldn’t find options", err);
     });
   }, [bridge?.proposeError, pushToast]);
 
@@ -695,7 +695,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     lastProposalToastIdRef.current = pid;
     const n = bridge.proposal.ranked_options.length;
     queueMicrotask(() => {
-      pushToast(<Check className="h-4 w-4" aria-hidden />, "Options ready", `${n} ranked rebooking option(s).`);
+      pushToast(<Check className="h-4 w-4" aria-hidden />, "Options ready", `${n} flight option(s) to compare.`);
     });
   }, [bridge?.proposing, bridge?.proposal, pushToast]);
 
@@ -849,7 +849,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
       }
       if (bridge.proposal?.ranked_options?.length) {
         y += 8;
-        line("Latest ranked options", 12, true);
+        line("Latest flight options", 12, true);
         bridge.proposal.ranked_options.slice(0, 3).forEach((opt, idx) => {
           line(`${idx + 1}. ${opt.summary}`);
         });
@@ -942,7 +942,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                 ReRoute <em className="not-italic text-[color:var(--primary)]">AI</em>
               </span>
               <span className="rounded-full border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--primary)]">
-                Agent active
+                Trip assist on
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -994,7 +994,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
           <div className="flex flex-col items-center justify-center gap-4 px-6 py-24 text-center">
             <div className="text-2xl font-semibold tracking-tight text-zinc-100">No trips yet</div>
             <p className="max-w-md text-sm text-zinc-500">
-              Create a demo trip to load itinerary, monitor status, and run the agent against your snapshot.
+              Create a demo trip to load your itinerary and try Find flights on your snapshot.
             </p>
             <button
               type="button"
@@ -1032,7 +1032,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-zinc-100">Flight 6E-204 (New Delhi → Bengaluru) has been cancelled</div>
                     <div className="mt-1 text-xs leading-relaxed text-zinc-400">
-                      Agent found 3 alternatives · Hotel check-in updated · 2 downstream effects resolved automatically
+                      3 better routes found · hotel check-in updated · 2 follow-on items handled
                     </div>
                   </div>
                 </div>
@@ -1076,7 +1076,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       <span className="text-zinc-500"> · 3 segments</span>
                     </div>
                     <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                      Walkthrough: compare ranked paths, confirm one, then open <strong className="font-medium text-zinc-300">Ripple</strong> and{" "}
+                      Walkthrough: compare options, confirm one, then open <strong className="font-medium text-zinc-300">Trip impact</strong> and{" "}
                       <strong className="font-medium text-zinc-300">Compensation</strong> in the steps above.
                     </p>
                   </>
@@ -1245,9 +1245,9 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                 >
                   {(
                     [
-                      { step: "run" as const, label: "Run agent" },
-                      { step: "options" as const, label: "Ranked options" },
-                      { step: "confirm" as const, label: "Ripple" },
+                      { step: "run" as const, label: "Find flights" },
+                      { step: "options" as const, label: "Your options" },
+                      { step: "confirm" as const, label: "Trip impact" },
                       { step: "compensation" as const, label: "Compensation" },
                     ] as const
                   ).map(({ step, label }) => {
@@ -1333,7 +1333,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         <span className="text-xs text-zinc-400 [&_strong]:font-medium [&_strong]:text-zinc-200">IndiGo · Crew unavailability</span>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-                        <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--warn)]">Agent: 3 alternatives found</span>
+                        <span className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--warn)]">3 alternatives found</span>
                         <span className="rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[color:var(--primary)]">Hotel notified</span>
                       </div>
                     </div>
@@ -1474,7 +1474,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   </div>
                 </div>
               ) : (
-                <p className="px-4 py-6 text-sm text-zinc-500">No flight legs yet. Trip snapshot is stored — run agent or wait for sync.</p>
+                <p className="px-4 py-6 text-sm text-zinc-500">No flight legs yet. Your snapshot is saved — use Find flights or wait for sync.</p>
               )}
               {isApiReady && bridge && activeStep === "run" && !showSeparateRebookingCard && !bridge.proposing ? (
                 <div className="border-t border-[color:var(--primary-soft)] bg-gradient-to-b from-[color:var(--primary-soft)] to-transparent px-5 py-5 transition-all duration-300">
@@ -1483,19 +1483,19 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       <Plane className="h-5 w-5" aria-hidden />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-semibold tracking-tight text-zinc-100">Run the agent from here</h3>
+                      <h3 className="text-sm font-semibold tracking-tight text-zinc-100">Start here</h3>
                       <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                        One action: we scan legs, rank rebook paths, and draft ripple context — then you move to{" "}
-                        <strong className="font-medium text-zinc-400">Ranked options</strong> automatically.
+                        One tap checks live status and weather, then lines up your best rebook paths. We&apos;ll take you to{" "}
+                        <strong className="font-medium text-zinc-400">Your options</strong> when they&apos;re ready.
                       </p>
                       <ul className="mt-3 space-y-2 text-xs text-zinc-400">
                         <li className="flex gap-2">
                           <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" aria-hidden />
-                          Multimodal search (flights, trains, mixed legs) scored by ETA and cost
+                          Smart search across flights (and other modes where available), scored by time and price
                         </li>
                         <li className="flex gap-2">
                           <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" aria-hidden />
-                          Downstream checks (hotels, meetings) summarized in the next step
+                          Hotels and meetings summarized in the next step when relevant
                         </li>
                         <li className="flex gap-2">
                           <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" aria-hidden />
@@ -1512,12 +1512,12 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       onClick={() => void bridge.runPropose(null)}
                     >
                       {bridge.proposing ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden /> : null}
-                      Run agent
+                      Find flights
                     </button>
                   </div>
                   <p className="mt-3 text-[11px] leading-relaxed text-zinc-600">
-                    The agent uses the latest flight status and weather signals for this itinerary and then ranks
-                    available options. Safe to retry — only this trip&apos;s proposal changes.
+                    We use the latest flight status and weather for this trip, then sort what&apos;s available. Safe to
+                    retry — only this trip&apos;s suggestions change.
                   </p>
                 </div>
               ) : null}
@@ -1767,19 +1767,19 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         onClick={() => void bridge.runPropose(null)}
                       >
                         {bridge.proposing ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden /> : null}
-                        {activeStep === "options" && hasRankedOptions ? "Re-run agent" : "Run agent"}
+                        {activeStep === "options" && hasRankedOptions ? "Refresh search" : "Find flights"}
                       </button>
                     </div>
                     <p className="border-b border-zinc-800/80 px-4 pb-3 text-[11px] leading-relaxed text-zinc-600">
-                      Proposal results are computed from current trip context and live provider responses. If availability
-                      shifts between propose and confirm, run the agent again for fresh options.
+                      Results use your trip details and live airline data. If fares move before you book, tap Refresh search
+                      for a new list.
                     </p>
                     {bridge.proposing && !bridge.proposal?.ranked_options?.length ? (
-                      <div className="space-y-2 p-4" aria-busy="true" aria-label="Agent ranking options">
+                      <div className="space-y-2 p-4" aria-busy="true" aria-label="Finding flight options">
                         <p className="text-xs font-medium text-[color:var(--primary)]">
                           {bridge.proposeJobState
                             ? `Background job: ${bridge.proposeJobState}…`
-                            : "Ranking options…"}
+                            : "Comparing options…"}
                         </p>
                         <div className="h-14 animate-pulse rounded-lg bg-zinc-800/50 transition-opacity" />
                         <div className="h-14 animate-pulse rounded-lg bg-zinc-800/50 transition-opacity [animation-delay:75ms]" />
@@ -1876,10 +1876,10 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     ) : (
                       <div className="px-4 py-8">
                         <div className="rounded-xl border border-dashed border-zinc-700/80 bg-zinc-950/30 p-5 text-center transition-colors duration-200 sm:text-left">
-                          <p className="text-sm font-semibold text-zinc-200">No ranked options yet</p>
+                          <p className="text-sm font-semibold text-zinc-200">No options yet</p>
                           <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                            Run the agent on your live itinerary to generate ranked options and cascade context for this
-                            trip.
+                            Tap Find flights on your live itinerary to see alternatives and what else on your trip might
+                            need attention.
                           </p>
                           <ul className="mx-auto mt-4 max-w-md space-y-2 text-left text-xs text-zinc-500 sm:mx-0">
                             <li className="flex gap-2">
@@ -1898,7 +1898,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                               <span className="text-[color:var(--primary)]" aria-hidden>
                                 ·
                               </span>
-                              When ready, switch to <strong className="text-zinc-400">Ranked options</strong> (unlocks after the first proposal)
+                              When ready, open <strong className="text-zinc-400">Your options</strong> (unlocks after the first search)
                             </li>
                           </ul>
                         </div>
@@ -1916,14 +1916,14 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
                 <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" aria-hidden />
-                  Downstream effects
+                  Trip impact
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                     {isApiReady
                       ? effectiveCascadePreview
                         ? `${ripplePreviewCount || "—"} preview item${ripplePreviewCount === 1 ? "" : "s"}`
-                        : "No agent preview"
+                        : "No preview yet"
                       : "Sample story"}
                   </span>
                   <button
@@ -1947,7 +1947,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                                 <TriangleAlert aria-hidden />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="text-sm font-semibold text-zinc-100">From your last agent run</div>
+                                <div className="text-sm font-semibold text-zinc-100">From your last search</div>
                                 <p className="mt-1 text-xs leading-relaxed text-zinc-500">
                                   Plain-language summary of what could change. This is not a live booking or calendar sync.
                                 </p>
@@ -1959,8 +1959,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                           </div>
                         ) : (
                           <div className="px-4 py-6 text-sm leading-relaxed text-zinc-500">
-                            No cascade preview is stored for this trip. Run the agent to generate downstream context, then
-                            confirm a rebooking option.
+                            No trip-impact preview is available yet. Run Find flights, then confirm a rebooking option.
                           </div>
                         )}
                         {snapshotAdditions.length > 0 ? (
@@ -1991,7 +1990,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-semibold text-zinc-100">Hotel — late check-in (example)</div>
                             <div className="mt-1 text-xs leading-relaxed text-zinc-500">
-                              Sample copy: hotel notified of late arrival. Your live trip uses data from the agent only.
+                              Sample copy: hotel notified of late arrival. Live trips use only your itinerary and search results.
                             </div>
                           </div>
                           <div className="shrink-0 self-center">
@@ -2070,8 +2069,8 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-semibold text-zinc-100">Next connection (example)</div>
                             <div className="mt-1 text-xs leading-relaxed text-zinc-500">
-                              Sample: buffer after rebooking. In a real trip, this comes from your itinerary and agent
-                              output.
+                              Sample: buffer after rebooking. In a real trip, this comes from your itinerary and your last
+                              search.
                             </div>
                           </div>
                           <div className="shrink-0 self-center">
@@ -2102,7 +2101,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   </div>
                   <div className="mt-1 text-xs leading-relaxed text-zinc-500">
                     {isApiReady
-                      ? "Your itinerary revision was updated. Open Compensation if your agent draft shows eligibility."
+                      ? "Your itinerary was updated. Open Compensation if the draft below shows you may be eligible."
                       : "This banner is part of the offline walkthrough. Connect a real trip for live status."}
                   </div>
                 </div>
@@ -2165,7 +2164,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       <p className="text-sm leading-relaxed text-zinc-300">
                         {typeof effectiveCompensationDraft.claim_text_draft === "string"
                           ? effectiveCompensationDraft.claim_text_draft
-                          : "Compensation draft from the agent is available below. Final eligibility depends on airline rules."}
+                          : "A compensation draft is available below. Final eligibility depends on airline rules."}
                       </p>
                       <details className="rounded-lg border border-zinc-800/80 bg-zinc-950/50 p-3 text-[11px] text-zinc-500">
                         <summary className="cursor-pointer font-medium text-zinc-400">Full draft (JSON)</summary>
@@ -2176,8 +2175,8 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     </>
                   ) : (
                     <p className="text-sm text-zinc-500">
-                      No compensation draft for this trip yet. Run the agent after a disruption is recorded to generate a
-                      draft.
+                      No compensation draft for this trip yet. After a disruption is recorded, run Find flights to
+                      generate a draft.
                     </p>
                   )
                 ) : (
@@ -2193,7 +2192,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       <div className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500">Demo figure only</div>
                     </div>
                     <p className="text-xs leading-relaxed text-zinc-400">
-                      Offline demo copy — not a real claim. Connect a trip and run the agent for a real draft.
+                      Offline demo copy — not a real claim. Connect a trip and use Find flights for a real draft.
                     </p>
                   </>
                 )}
@@ -2325,7 +2324,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     </div>
                   ) : (
                     <p className="text-xs leading-relaxed text-[color:var(--subtle)]">
-                      Predictive on-time scores are not shown here yet. Use the agent run and activity log for current
+                      Predictive on-time scores are not shown here yet. Use Find flights and the activity log for current
                       signals.
                     </p>
                   )}
@@ -2407,7 +2406,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   </div>
                   {weatherRunSummary.source ? (
                     <span className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--subtle)]">
-                      {weatherRunSummary.source === "agent_run" ? "from latest agent run" : "from monitor"}
+                      {weatherRunSummary.source === "agent_run" ? "from latest search" : "from monitor"}
                     </span>
                   ) : null}
                 </div>
@@ -2493,7 +2492,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
-                        Agent activity
+                        Activity log
                       </div>
                       <button
                         type="button"
@@ -2509,7 +2508,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
                       <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
-                        Agent activity
+                        Activity log
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
@@ -2540,7 +2539,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
                     <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
                       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
-                      Agent activity
+                      Activity log
                     </div>
                     <span className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                       {displayLogs.length} events

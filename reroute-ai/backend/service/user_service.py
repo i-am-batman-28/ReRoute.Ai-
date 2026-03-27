@@ -318,6 +318,11 @@ async def update_me(*, user: User, payload: UserUpdateRequest, session: AsyncSes
     if "avatar_url" in data:
         av = data["avatar_url"]
         user.avatar_url = (str(av).strip() or None) if av is not None else None
+    if "auto_rebook" in data:
+        user.auto_rebook = bool(data["auto_rebook"])
+    if "phone_number" in data:
+        pn = data["phone_number"]
+        user.phone_number = (str(pn).strip() or None) if pn is not None else None
     dao = UserDAO(session)
     await dao.save(user)
     await session.commit()

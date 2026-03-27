@@ -5,7 +5,6 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import {
   AlertTriangle,
   BarChart3,
-  Calendar,
   Car,
   Check,
   ChevronDown,
@@ -27,7 +26,6 @@ import {
   Sparkles,
   Thermometer,
   TrainFront,
-  TriangleAlert,
   UtensilsCrossed,
   Wind,
   X,
@@ -47,7 +45,6 @@ import {
   cascadePreviewBullets,
   getRankedOptionDisplay,
   humanizeToolTraceLine,
-  snapshotTripAdditions,
 } from "@/lib/reroute-display";
 
 type LogDot = "g" | "a" | "r" | "b";
@@ -246,13 +243,6 @@ function optionModalityIcon(modality: string | undefined) {
   return <Plane aria-hidden />;
 }
 
-function readUiDensity(): "calm" | "standard" | "ops" {
-  if (typeof window === "undefined") return "standard";
-  const v = localStorage.getItem("reroute-ui-density");
-  if (v === "calm" || v === "standard" || v === "ops") return v;
-  return "standard";
-}
-
 function apiBannerCopy(
   b: ReRouteDashboardBridge,
   confirmedForTrip: boolean,
@@ -292,9 +282,9 @@ type ToastItem = {
   iconTone?: "default" | "money";
 };
 
-type ControlStep = "run" | "options" | "confirm" | "compensation";
+type ControlStep = "run" | "compensation";
 
-const WORKFLOW_STEP_ORDER: ControlStep[] = ["run", "options", "confirm", "compensation"];
+const WORKFLOW_STEP_ORDER: ControlStep[] = ["run", "compensation"];
 
 type ReRouteDashboardProps = {
   userLabel: string;
@@ -310,7 +300,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
   const [bannerVisible, setBannerVisible] = useState(true);
   const [confirmedId, setConfirmedId] = useState<string | null>(null);
   const [apiConfirmedPair, setApiConfirmedPair] = useState<{ proposalId: string; optionId: string } | null>(null);
-  const [meetingStatus, setMeetingStatus] = useState<"pending" | "moved" | "kept">("pending");
   const [claimSubmitted, setClaimSubmitted] = useState(false);
   const [compFillPct, setCompFillPct] = useState(0);
   const [logs, setLogs] = useState<LogLine[]>(INITIAL_LOGS);
@@ -322,9 +311,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
   const isApiReady = Boolean(bridge && bridge.state === "ready" && bridge.detail);
 
   const [confirmedOnce, setConfirmedOnce] = useState(false);
-  const [rippleOpen, setRippleOpen] = useState(false);
   const [cascadeTeaserOpen, setCascadeTeaserOpen] = useState(false);
-  const [agentLogsOpen, setAgentLogsOpen] = useState(false);
   const [ackDisruptionUncertainty, setAckDisruptionUncertainty] = useState(false);
 
   const tripKey = bridge?.tripId ?? "demo";
@@ -360,11 +347,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     }
   }, [bridge?.proposal?.compensation_draft, bridge?.tripId]);
 
-  const ripplePreviewCount = useMemo(() => {
-    if (!effectiveCascadePreview) return 0;
-    return cascadePreviewBullets(effectiveCascadePreview).length;
-  }, [effectiveCascadePreview]);
-
   const rankedOptionsCount = bridge?.proposal?.ranked_options?.length ?? 0;
   const hasRankedOptions = isApiReady && rankedOptionsCount > 0;
   const confirmedOnceForTrip = confirmedOnce && confirmedOnceTripKey === tripKey;
@@ -372,16 +354,15 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     confirmedOnceForTrip ||
     Boolean(effectiveCompensationDraft) ||
     Boolean(bridge?.proposal?.compensation_draft);
-  const suggestedStep: ControlStep = !isApiReady ? "run" : confirmedOnceForTrip ? "confirm" : hasRankedOptions ? "options" : "run";
+  const suggestedStep: ControlStep =
+    !isApiReady ? "run" : confirmedOnceForTrip && compensationEligible ? "compensation" : "run";
 
   const isStepEnabled = useCallback(
     (step: ControlStep) => {
       if (step === "run") return true;
-      if (step === "options") return isApiReady && hasRankedOptions;
-      if (step === "confirm") return confirmedOnceForTrip;
       return compensationEligible;
     },
-    [compensationEligible, confirmedOnceForTrip, hasRankedOptions, isApiReady],
+    [compensationEligible],
   );
 
   const activeStep: ControlStep =
@@ -396,16 +377,8 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     [activeStepIndex],
   );
 
-  type UiDensity = "calm" | "standard" | "ops";
   type RailTab = "radar" | "assistant" | "weather" | "logs";
-  const [uiDensity, setUiDensity] = useState<UiDensity>(() => readUiDensity());
   const [railTab, setRailTab] = useState<RailTab>("radar");
-
-  const persistDensity = useCallback((d: UiDensity) => {
-    setUiDensity(d);
-    if (typeof window !== "undefined") localStorage.setItem("reroute-ui-density", d);
-    if (d === "calm") setAgentLogsOpen(false);
-  }, []);
 
   const tripStatusLine = useMemo(() => {
     if (!isApiReady || !bridge) return null;
@@ -425,7 +398,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     if (confirmedOnceForTrip) {
       return {
         tone: "ok" as const,
-        text: "Rebooking confirmed — review trip impact and compensation when you’re ready.",
+        text: "Rebooking confirmed — review compensation when you’re ready.",
       };
     }
     const dis = [...bridge.events]
@@ -550,7 +523,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
 
   const showSeparateRebookingCard =
     !isApiReady ||
-    activeStep === "options" ||
     hasRankedOptions ||
     Boolean(bridge?.proposing) ||
     Boolean(bridge?.confirming);
@@ -576,11 +548,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     }
     return ["—"];
   }, [sortedLegs, primaryFromSnapshot]);
-
-  const snapshotAdditions = useMemo(() => {
-    if (!isApiReady || !bridge?.detail?.trip?.snapshot) return [];
-    return snapshotTripAdditions(bridge.detail.trip.snapshot as Record<string, unknown>);
-  }, [isApiReady, bridge?.detail?.trip?.snapshot]);
 
   const snapshotTripSummary = useMemo(() => {
     if (!isApiReady || !bridge?.detail?.trip?.snapshot) return null;
@@ -623,7 +590,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
 
   const resetDemoWorkspace = useCallback(() => {
     setConfirmedId(null);
-    setMeetingStatus("pending");
     setClaimSubmitted(false);
     setCompFillPct(60);
     setLogs(INITIAL_LOGS);
@@ -734,8 +700,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
       if (next !== activeStep) {
         setManualStepTripKey(tripKey);
         setManualStep(next);
-        setRippleOpen(next === "confirm");
-        setAgentLogsOpen(false);
         e.preventDefault();
         window.requestAnimationFrame(() => focusStepTab(next));
       }
@@ -763,7 +727,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
       }
       setConfirmedOnce(true);
       setConfirmedOnceTripKey(tripKey);
-      setRippleOpen(true);
       addLog("g", (
         <>
           <span className="font-medium text-[color:var(--primary)]">Confirmed:</span> <span className="text-zinc-200">{name}</span> — updating itinerary
@@ -780,24 +743,12 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     setConfirmedId(id);
     setConfirmedOnce(true);
     setConfirmedOnceTripKey(tripKey);
-    setRippleOpen(true);
     addLog("g", (
       <>
         <span className="font-medium text-[color:var(--primary)]">Confirmed:</span> <span className="text-zinc-200">{name}</span> — updating itinerary
       </>
     ));
     pushToast(<Check aria-hidden />, "Booking confirmed", `${name} selected. Itinerary updated across all segments.`);
-  }
-
-  function resolveMeeting(action: "moved" | "kept") {
-    if (action === "moved") {
-      setMeetingStatus("moved");
-      addLog("g", <>Calendar updated. <span className="font-medium text-[color:var(--primary)]">3 attendees notified.</span></>);
-      pushToast(<Calendar aria-hidden />, "Meeting rescheduled", "9 AM moved to 11 AM. Invite sent to 3 attendees.");
-    } else {
-      setMeetingStatus("kept");
-      addLog("a", <><span className="font-medium text-[color:var(--warn)]">Meeting kept at 9 AM.</span> Tight but feasible.</>);
-    }
   }
 
   function submitClaim() {
@@ -1076,8 +1027,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       <span className="text-zinc-500"> · 3 segments</span>
                     </div>
                     <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                      Walkthrough: compare options, confirm one, then open <strong className="font-medium text-zinc-300">Trip impact</strong> and{" "}
-                      <strong className="font-medium text-zinc-300">Compensation</strong> in the steps above.
+                      Walkthrough: compare options, confirm one, then open <strong className="font-medium text-zinc-300">Compensation</strong> when a draft is available.
                     </p>
                   </>
                 ) : bridge?.detail ? (
@@ -1217,27 +1167,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   </button>
                 ) : null}
                 <div
-                  className="flex w-full flex-wrap gap-1 rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-1 sm:w-auto sm:flex-1"
-                  role="group"
-                  aria-label="Information density"
-                >
-                  {(["calm", "standard", "ops"] as const).map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => persistDensity(d)}
-                      className={cn(
-                        "min-h-10 flex-1 rounded-lg px-3 py-2 text-[11px] font-semibold capitalize transition sm:flex-none sm:min-h-0",
-                        uiDensity === d
-                          ? "bg-zinc-800 text-white ring-1 ring-zinc-700"
-                          : "text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300",
-                      )}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-                <div
                   className="flex flex-wrap gap-2"
                   role="tablist"
                   aria-label="Workflow steps"
@@ -1246,8 +1175,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   {(
                     [
                       { step: "run" as const, label: "Find flights" },
-                      { step: "options" as const, label: "Your options" },
-                      { step: "confirm" as const, label: "Trip impact" },
                       { step: "compensation" as const, label: "Compensation" },
                     ] as const
                   ).map(({ step, label }) => {
@@ -1267,13 +1194,11 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         onClick={() => {
                           setManualStepTripKey(tripKey);
                           setManualStep(step);
-                          setRippleOpen(step === "confirm");
-                          setAgentLogsOpen(false);
                         }}
                         className={cn(
                           "inline-flex min-h-10 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition duration-200",
                           active &&
-                            "border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--bg)] shadow-[0_0_0_1px_rgba(52,211,153,0.2)] ring-2 ring-[color:var(--primary-soft)]",
+                            "border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--fg)] shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary),transparent_70%)] ring-2 ring-[color:var(--primary-soft)]",
                           !active && done && enabled && "border-[color:var(--primary-soft)] bg-zinc-900/50 text-zinc-500",
                           !active && !done && enabled && "border-zinc-800/80 bg-zinc-900/30 text-zinc-300 hover:bg-zinc-900/60",
                           !enabled && "cursor-not-allowed border-zinc-800/60 bg-zinc-950/40 opacity-40",
@@ -1291,14 +1216,11 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
         <div
           className={cn(
             "grid gap-6 transition-[grid-template-columns] duration-300",
-            "max-lg:grid-cols-1",
-            uiDensity === "calm" && "lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]",
-            uiDensity === "standard" && "lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]",
-            uiDensity === "ops" && "lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]",
+            "max-lg:grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]",
           )}
         >
           <div className="flex min-w-0 flex-col gap-6 lg:min-h-0">
-            {activeStep === "run" || activeStep === "options" ? (
+            {activeStep === "run" || activeStep === "compensation" ? (
               <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
                 <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
@@ -1485,8 +1407,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     <div className="min-w-0 flex-1">
                       <h3 className="text-sm font-semibold tracking-tight text-zinc-100">Start here</h3>
                       <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                        One tap checks live status and weather, then lines up your best rebook paths. We&apos;ll take you to{" "}
-                        <strong className="font-medium text-zinc-400">Your options</strong> when they&apos;re ready.
+                        One tap checks live status and weather, then lines up your best rebook paths below.
                       </p>
                       <ul className="mt-3 space-y-2 text-xs text-zinc-400">
                         <li className="flex gap-2">
@@ -1495,7 +1416,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         </li>
                         <li className="flex gap-2">
                           <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" aria-hidden />
-                          Hotels and meetings summarized in the next step when relevant
+                          Hotels and meetings summarized when relevant
                         </li>
                         <li className="flex gap-2">
                           <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--primary)]" aria-hidden />
@@ -1532,7 +1453,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
             {isApiReady &&
             effectiveCascadePreview &&
             hasRankedOptions &&
-            (activeStep === "run" || activeStep === "options") ? (
+            (activeStep === "run" || activeStep === "compensation") ? (
               <div className="overflow-hidden rounded-xl border border-amber-500/20 bg-amber-500/[0.04] shadow-sm shadow-black/10">
                 <button
                   type="button"
@@ -1559,7 +1480,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
             ) : null}
 
-            {showSeparateRebookingCard && (activeStep === "run" || activeStep === "options") ? (
+            {showSeparateRebookingCard && (activeStep === "run" || activeStep === "compensation") ? (
               <div
                 className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20"
                 ref={optsRef}
@@ -1759,7 +1680,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         type="button"
                         className={cn(
                           "inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium disabled:opacity-50",
-                          activeStep === "options" && hasRankedOptions
+                          hasRankedOptions
                             ? "border-zinc-600 bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200"
                             : "border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-800",
                         )}
@@ -1767,7 +1688,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         onClick={() => void bridge.runPropose(null)}
                       >
                         {bridge.proposing ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden /> : null}
-                        {activeStep === "options" && hasRankedOptions ? "Refresh search" : "Find flights"}
+                        {hasRankedOptions ? "Refresh search" : "Find flights"}
                       </button>
                     </div>
                     <p className="border-b border-zinc-800/80 px-4 pb-3 text-[11px] leading-relaxed text-zinc-600">
@@ -1898,7 +1819,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                               <span className="text-[color:var(--primary)]" aria-hidden>
                                 ·
                               </span>
-                              When ready, open <strong className="text-zinc-400">Your options</strong> (unlocks after the first search)
+                              Rebooking options appear here after the first search
                             </li>
                           </ul>
                         </div>
@@ -1910,227 +1831,42 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
             </div>
             ) : null}
 
-            {activeStep === "confirm" || activeStep === "compensation" ? (
-              <>
-                <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" aria-hidden />
-                  Trip impact
+            {confirmedOnceForTrip ? (
+              <div className="flex flex-col gap-4 rounded-xl border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[color:var(--primary-soft)] text-[color:var(--primary)]">
+                    <Check aria-hidden />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-zinc-100">
+                      {isApiReady ? "Rebooking applied" : "Demo: trip back on track"}
+                    </div>
+                    <div className="mt-1 text-xs leading-relaxed text-zinc-500">
+                      {isApiReady
+                        ? "Your itinerary was updated. Open Compensation if the draft below shows you may be eligible."
+                        : "This banner is part of the offline walkthrough. Connect a real trip for live status."}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
-                    {isApiReady
-                      ? effectiveCascadePreview
-                        ? `${ripplePreviewCount || "—"} preview item${ripplePreviewCount === 1 ? "" : "s"}`
-                        : "No preview yet"
-                      : "Sample story"}
-                  </span>
-                  <button
-                    type="button"
-                    className="rounded-md border border-zinc-700 bg-zinc-900/30 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-300 hover:bg-zinc-800"
-                    onClick={() => setRippleOpen((v) => !v)}
-                  >
-                    {rippleOpen ? "Hide details" : "View details"}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => void downloadItineraryPdf()}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold",
+                    isApiReady
+                      ? "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]"
+                      : "cursor-not-allowed border border-zinc-700 bg-zinc-900/60 text-zinc-500",
+                  )}
+                  title={!isApiReady ? "Load a live trip to export." : undefined}
+                >
+                  Share itinerary
+                  <ExternalLink size={15} aria-hidden />
+                </button>
               </div>
-              <div className="divide-y divide-zinc-800/80">
-                {rippleOpen ? (
-                  <div className="contents">
-                    {isApiReady ? (
-                      <>
-                        {effectiveCascadePreview ? (
-                          <div className="border-b border-zinc-800/80 px-4 py-4">
-                            <div className="flex gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-[color:var(--warn)]">
-                                <TriangleAlert aria-hidden />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="text-sm font-semibold text-zinc-100">From your last search</div>
-                                <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                                  Plain-language summary of what could change. This is not a live booking or calendar sync.
-                                </p>
-                                <div className="mt-4">
-                                  <CascadePreviewFriendly preview={effectiveCascadePreview} />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="px-4 py-6 text-sm leading-relaxed text-zinc-500">
-                            No trip-impact preview is available yet. Run Find flights, then confirm a rebooking option.
-                          </div>
-                        )}
-                        {snapshotAdditions.length > 0 ? (
-                          <div className="px-4 py-4">
-                            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                              From your itinerary snapshot
-                            </p>
-                            <ul className="space-y-2">
-                              {snapshotAdditions.map((a) => (
-                                <li key={a.key} className="rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2.5">
-                                  <div className="text-[10px] font-semibold text-zinc-500">{a.label}</div>
-                                  <p className="mt-1 text-sm text-zinc-300">{a.text}</p>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : null}
-                      </>
-                    ) : (
-                      <>
-                        <p className="border-b border-amber-500/20 bg-amber-500/[0.04] px-4 py-3 text-xs leading-relaxed text-[color:var(--warn)]/90">
-                          Illustrative demo only — not your real hotel, meeting, or connection.
-                        </p>
-                        <div className="flex gap-3 px-4 py-4">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--primary)]">
-                            <Check aria-hidden />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-zinc-100">Hotel — late check-in (example)</div>
-                            <div className="mt-1 text-xs leading-relaxed text-zinc-500">
-                              Sample copy: hotel notified of late arrival. Live trips use only your itinerary and search results.
-                            </div>
-                          </div>
-                          <div className="shrink-0 self-center">
-                            <span className="rounded-full border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
-                              Done
-                            </span>
-                          </div>
-                        </div>
-
-                        <div
-                          className={cn(
-                            "flex gap-3 px-4 py-4",
-                            meetingStatus === "pending" ? "bg-amber-500/5" : "bg-zinc-900/20",
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-sm",
-                              meetingStatus === "pending"
-                                ? "border-amber-500/30 bg-amber-500/10 text-[color:var(--warn)]"
-                                : "border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--primary)]",
-                            )}
-                          >
-                            {meetingStatus === "pending" ? <Calendar aria-hidden /> : <Check aria-hidden />}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-zinc-100">
-                              {meetingStatus === "moved"
-                                ? "Meeting — moved (example)"
-                                : meetingStatus === "kept"
-                                  ? "Meeting — kept (example)"
-                                  : "Meeting — suggested move (example)"}
-                            </div>
-                            <div className="mt-1 text-xs leading-relaxed text-zinc-500">
-                              {meetingStatus === "pending"
-                                ? "Try Move it / Keep it to see how the demo behaves."
-                                : meetingStatus === "moved"
-                                  ? "Demo only — not a real calendar."
-                                  : "Demo only — not a real calendar."}
-                            </div>
-                          </div>
-                          <div className="flex shrink-0 flex-col items-end justify-center gap-2 self-center">
-                            {meetingStatus === "pending" ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="rounded-lg bg-[color:var(--primary)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[color:var(--primary)]"
-                                  onClick={() => resolveMeeting("moved")}
-                                >
-                                  Move it
-                                </button>
-                                <button
-                                  type="button"
-                                  className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
-                                  onClick={() => resolveMeeting("kept")}
-                                >
-                                  Keep it
-                                </button>
-                              </>
-                            ) : meetingStatus === "moved" ? (
-                              <span className="rounded-full border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
-                                Moved
-                              </span>
-                            ) : (
-                              <span className="rounded-full border border-zinc-700 bg-zinc-800/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-                                Kept
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex gap-3 px-4 py-4">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] text-[color:var(--primary)]">
-                            <Check aria-hidden />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-zinc-100">Next connection (example)</div>
-                            <div className="mt-1 text-xs leading-relaxed text-zinc-500">
-                              Sample: buffer after rebooking. In a real trip, this comes from your itinerary and your last
-                              search.
-                            </div>
-                          </div>
-                          <div className="shrink-0 self-center">
-                            <span className="rounded-full border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
-                              OK
-                            </span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="px-4 py-4 text-sm text-zinc-500">
-                    Details collapsed. Click “View details” to expand.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4 rounded-xl border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[color:var(--primary-soft)] text-[color:var(--primary)]">
-                  <Check aria-hidden />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-zinc-100">
-                    {isApiReady ? "Rebooking applied" : "Demo: trip back on track"}
-                  </div>
-                  <div className="mt-1 text-xs leading-relaxed text-zinc-500">
-                    {isApiReady
-                      ? "Your itinerary was updated. Open Compensation if the draft below shows you may be eligible."
-                      : "This banner is part of the offline walkthrough. Connect a real trip for live status."}
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => void downloadItineraryPdf()}
-                className={cn(
-                  "inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold",
-                  isApiReady
-                    ? "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]"
-                    : "cursor-not-allowed border border-zinc-700 bg-zinc-900/60 text-zinc-500",
-                )}
-                title={!isApiReady ? "Load a live trip to export." : undefined}
-              >
-                Share itinerary
-                <ExternalLink size={15} aria-hidden />
-              </button>
-            </div>
-                </>
             ) : null}
           </div>
 
-          <div
-            className={cn(
-              "flex min-w-0 flex-col gap-4 transition-[gap] duration-300 lg:min-h-0",
-              uiDensity === "standard" && "lg:gap-3",
-            )}
-          >
+          <div className="flex min-w-0 flex-col gap-4 transition-[gap] duration-300 lg:min-h-0 lg:gap-3">
             {activeStep === "compensation" ? (
               <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
@@ -2247,8 +1983,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
             ) : null}
 
-            {uiDensity !== "ops" ? (
-              <div
+            <div
                 className="flex shrink-0 gap-1 rounded-xl border border-[color:var(--stroke)] bg-[color:var(--surface-1)] p-1"
                 role="tablist"
                 aria-label="Context panels"
@@ -2266,10 +2001,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     type="button"
                     role="tab"
                     aria-selected={railTab === id}
-                    onClick={() => {
-                      setRailTab(id);
-                      if (id !== "logs") setAgentLogsOpen(false);
-                    }}
+                    onClick={() => setRailTab(id)}
                     className={cn(
                       "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2.5 text-[11px] font-semibold transition sm:min-h-10",
                       railTab === id
@@ -2281,10 +2013,9 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     <span className="hidden sm:inline">{label}</span>
                   </button>
                 ))}
-              </div>
-            ) : null}
+            </div>
 
-            {(uiDensity === "ops" || railTab === "radar") ? (
+            {railTab === "radar" ? (
               <div className="rr-card overflow-hidden rounded-xl transition-opacity duration-200">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--stroke)] px-4 py-3">
                   <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[color:var(--subtle)]">
@@ -2293,7 +2024,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   </div>
                   <span className="text-xs text-[color:var(--subtle)]">{isApiReady ? "From trip" : "Demo"}</span>
                 </div>
-                <div className={cn("space-y-3 p-4", uiDensity === "calm" && "space-y-2 p-3")}>
+                <div className="space-y-3 p-4">
                   {isApiReady && sortedLegs.length > 0 ? (
                     sortedLegs.map((leg) => (
                       <div
@@ -2332,7 +2063,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
             ) : null}
 
-            {(uiDensity === "ops" || railTab === "assistant") ? (
+            {railTab === "assistant" ? (
               <div className="rr-card overflow-hidden rounded-xl transition-opacity duration-200">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--stroke)] px-4 py-3">
                   <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[color:var(--subtle)]">
@@ -2397,7 +2128,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
             ) : null}
 
-            {(uiDensity === "ops" || railTab === "weather") ? (
+            {railTab === "weather" ? (
               <div className="rr-card overflow-hidden rounded-xl transition-opacity duration-200">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--stroke)] px-4 py-3">
                   <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[color:var(--subtle)]">
@@ -2485,77 +2216,27 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
             ) : null}
 
-            {(uiDensity === "ops" || railTab === "logs") ? (
-              uiDensity === "ops" ? (
-                !agentLogsOpen ? (
-                  <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
-                        Activity log
-                      </div>
-                      <button
-                        type="button"
-                        className="min-h-10 rounded-lg border border-zinc-700 bg-zinc-900/30 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-900/50"
-                        onClick={() => setAgentLogsOpen(true)}
-                      >
-                        View logs ({displayLogs.length})
-                      </button>
-                    </div>
+            {railTab === "logs" ? (
+              <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20 transition-opacity duration-200">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
+                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
+                    Activity log
                   </div>
-                ) : (
-                  <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
-                      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
-                        Activity log
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
-                          Live
-                        </span>
-                        <button
-                          type="button"
-                          className="min-h-10 rounded-lg border border-zinc-700 bg-zinc-900/30 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-900/50"
-                          onClick={() => setAgentLogsOpen(false)}
-                        >
-                          Hide
-                        </button>
-                      </div>
-                    </div>
-                    <div className="max-h-72 space-y-0 overflow-y-auto p-2 font-mono text-[12px]" ref={logWrapRef}>
-                      {displayLogs.map((row) => (
-                        <div key={row.id} className="flex gap-3 border-t border-zinc-800/40 py-2 pl-1 first:border-t-0">
-                          <span className="w-10 shrink-0 tabular-nums text-zinc-600">{row.time}</span>
-                          <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", logDotClass[row.dot])} />
-                          <span className="min-w-0 leading-snug text-zinc-300">{row.children}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20 transition-opacity duration-200">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-3">
-                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
-                      Activity log
-                    </div>
-                    <span className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
-                      {displayLogs.length} events
-                    </span>
-                  </div>
-                  <div className="max-h-[min(24rem,55vh)] space-y-0 overflow-y-auto p-2 font-mono text-[12px]" ref={logWrapRef}>
-                    {displayLogs.map((row) => (
-                      <div key={row.id} className="flex gap-3 border-t border-zinc-800/40 py-2 pl-1 first:border-t-0">
-                        <span className="w-10 shrink-0 tabular-nums text-zinc-600">{row.time}</span>
-                        <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", logDotClass[row.dot])} />
-                        <span className="min-w-0 leading-snug text-zinc-300">{row.children}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <span className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
+                    {displayLogs.length} events
+                  </span>
                 </div>
-              )
+                <div className="max-h-[min(24rem,55vh)] space-y-0 overflow-y-auto p-2 font-mono text-[12px]" ref={logWrapRef}>
+                  {displayLogs.map((row) => (
+                    <div key={row.id} className="flex gap-3 border-t border-zinc-800/40 py-2 pl-1 first:border-t-0">
+                      <span className="w-10 shrink-0 tabular-nums text-zinc-600">{row.time}</span>
+                      <span className={cn("mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full", logDotClass[row.dot])} />
+                      <span className="min-w-0 leading-snug text-zinc-300">{row.children}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : null}
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, LayoutDashboard, Loader2, LogOut, MapPin, Plane, Radar, Settings } from "lucide-react";
+import { Activity, LayoutDashboard, Loader2, LogOut, MapPin, Plane, Settings } from "lucide-react";
 
 import { useRerouteSession } from "@/components/reroute-session-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -11,7 +11,6 @@ import { cn } from "@/lib/cn";
 const nav = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/trips", label: "Trips", icon: MapPin },
-  { href: "/monitor", label: "Monitor", icon: Radar },
   { href: "/activity", label: "Activity", icon: Activity },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;

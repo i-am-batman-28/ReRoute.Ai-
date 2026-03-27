@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@emailjs/browser": "^4.4.1",
     "framer-motion": "^11.18.2",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.6.0",

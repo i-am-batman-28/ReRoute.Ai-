@@ -307,7 +307,7 @@ export function PricingSection() {
             </p>
           </div>
           <Link
-            href="/contact"
+            href="/#contact"
             className="mt-6 inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-full border px-6 text-sm font-semibold transition hover:opacity-90 sm:mt-0"
             style={{
               borderColor: "var(--stroke-strong)",

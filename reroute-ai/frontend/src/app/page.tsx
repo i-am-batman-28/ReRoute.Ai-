@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ChevronRight, Plane } from "lucide-react";
 
 import { PricingSection } from "@/components/marketing/pricing-section";
+import { AboutSection } from "@/components/marketing/about-section";
+import { ContactSection } from "@/components/marketing/contact-section";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/cn";
 
@@ -76,7 +78,10 @@ export default function HomePage() {
               <a href="#pricing" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
                 Pricing
               </a>
-              <Link href="/contact" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
+              <Link href="/#about" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
+                About
+              </Link>
+              <Link href="/#contact" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
                 Contact Us
               </Link>
             </nav>
@@ -358,6 +363,10 @@ export default function HomePage() {
 
       <PricingSection />
 
+      <AboutSection />
+
+      <ContactSection />
+
       {/* Footer */}
       <footer className="border-t py-8" style={{ borderColor: "var(--stroke)", background: "var(--bg)" }}>
         <div
@@ -372,7 +381,7 @@ export default function HomePage() {
             <Link href="/signup" className="hover:opacity-100 transition" style={{ opacity: 0.7 }}>
               Sign up
             </Link>
-            <Link href="/contact" className="hover:opacity-100 transition" style={{ opacity: 0.7 }}>
+            <Link href="/#contact" className="hover:opacity-100 transition" style={{ opacity: 0.7 }}>
               Contact Us
             </Link>
           </div>

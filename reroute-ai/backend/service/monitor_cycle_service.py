@@ -18,16 +18,35 @@ from integrations.location_resolver import resolve_coords
 logger = logging.getLogger(__name__)
 
 
+_SEVERE_WEATHER_CODES = {65, 75, 82, 85, 86, 95, 96, 99}
+
+
+def _weather_severity_bucket(code: Any) -> str:
+    """Map weather code to a coarse bucket so minor changes don't trigger alerts."""
+    try:
+        c = int(code) if code is not None else -1
+    except (ValueError, TypeError):
+        return "unknown"
+    if c in _SEVERE_WEATHER_CODES:
+        return "severe"
+    if c in {61, 63, 71, 73, 80, 81}:
+        return "moderate"
+    if c in {45, 48, 51, 53, 55}:
+        return "light"
+    if c in {0, 1, 2, 3}:
+        return "clear"
+    return "other"
+
+
 def _weather_codes_latest(weather: dict[str, Any]) -> str:
     # New shape: weather.origin_latest / weather.destination_latest with scalar fields.
+    # Only track severity buckets (not raw codes) to avoid false alerts on minor shifts.
     origin = weather.get("origin_latest") if isinstance(weather.get("origin_latest"), dict) else {}
     destination = weather.get("destination_latest") if isinstance(weather.get("destination_latest"), dict) else {}
     if origin or destination:
         signature = {
-            "origin_code": origin.get("weather_code"),
-            "origin_rain": origin.get("precipitation_probability"),
-            "destination_code": destination.get("weather_code"),
-            "destination_rain": destination.get("precipitation_probability"),
+            "origin_severity": _weather_severity_bucket(origin.get("weather_code")),
+            "destination_severity": _weather_severity_bucket(destination.get("weather_code")),
         }
         return json.dumps(signature, separators=(",", ":"), sort_keys=True)
 
@@ -175,6 +194,10 @@ async def run_monitor_cycle(*, session: AsyncSession) -> dict[str, int]:
             scanned += 1
 
             if prev_sig is not None and prev_sig != signature:
+                origin_wx = weather.get("origin_latest", {})
+                dest_wx = weather.get("destination_latest", {})
+                origin_severe = int(origin_wx.get("weather_code") or 0) in _SEVERE_WEATHER_CODES
+                dest_severe = int(dest_wx.get("weather_code") or 0) in _SEVERE_WEATHER_CODES
                 await ev_dao.create(
                     trip_id=trip.id,
                     user_id=trip.user_id,
@@ -186,6 +209,8 @@ async def run_monitor_cycle(*, session: AsyncSession) -> dict[str, int]:
                         "current_signature": signature,
                         "flight_status": flight_status,
                         "weather": weather,
+                        "severe_weather_origin": origin_severe,
+                        "severe_weather_destination": dest_severe,
                         "source": "monitor_cycle",
                     },
                 )

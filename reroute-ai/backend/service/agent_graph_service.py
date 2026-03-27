@@ -288,6 +288,7 @@ async def _llm_generate(prompt: str, max_tokens: int = 300) -> str | None:
         from langchain_openai import ChatOpenAI
         from langchain_core.messages import HumanMessage, SystemMessage
 
+        from agent.policy import SYSTEM_PROMPT as AGENT_SYSTEM_PROMPT
         from config import get_settings
         settings = get_settings()
         if not settings.OPENAI_API_KEY:
@@ -295,7 +296,7 @@ async def _llm_generate(prompt: str, max_tokens: int = 300) -> str | None:
 
         llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3, api_key=settings.OPENAI_API_KEY, max_tokens=max_tokens)
         resp = await llm.ainvoke([
-            SystemMessage(content="You are ReRoute AI, a travel disruption assistant. Be concise, factual, helpful. Use plain language."),
+            SystemMessage(content=AGENT_SYSTEM_PROMPT),
             HumanMessage(content=prompt),
         ])
         return resp.content if hasattr(resp, "content") else str(resp)
@@ -604,10 +605,47 @@ def _rank_options(state: AgentGraphState) -> AgentGraphState:
             "checkpoint_events": state.get("checkpoint_events", []),
         }
 
+    # Deduplicate offers by itinerary shape (origin→dest + departure time, rounded to 10min).
+    # Duffel returns multiple fare classes per flight — we keep ONLY the cheapest per unique journey.
+    def _itinerary_key(offer: dict[str, Any]) -> str:
+        parts = []
+        for s in offer.get("slices") or []:
+            if not isinstance(s, dict):
+                continue
+            for seg in s.get("segments") or []:
+                if not isinstance(seg, dict):
+                    continue
+                origin = (seg.get("origin") or {})
+                dest = (seg.get("destination") or {})
+                o_iata = origin.get("iata_code", "") if isinstance(origin, dict) else ""
+                d_iata = dest.get("iata_code", "") if isinstance(dest, dict) else ""
+                # Round departure to 10-min window so minor time variants collapse
+                dep = str(seg.get("departing_at") or "")[:15]  # "2026-04-01T05:2" — 10-min bucket
+                parts.append(f"{o_iata}>{d_iata}@{dep}")
+        return "|".join(parts) or str(offer.get("id", ""))
+
+    seen_itineraries: dict[str, dict[str, Any]] = {}
+    for offer in offers:
+        key = _itinerary_key(offer)
+        existing = seen_itineraries.get(key)
+        if existing is None:
+            seen_itineraries[key] = offer
+        else:
+            # Keep the cheaper one
+            try:
+                new_price = float(offer.get("total_amount") or 999999)
+                old_price = float(existing.get("total_amount") or 999999)
+                if new_price < old_price:
+                    seen_itineraries[key] = offer
+            except (ValueError, TypeError):
+                pass
+    deduped = list(seen_itineraries.values())
+    logger.info("rank_options_dedup", extra={"original": len(offers), "deduped": len(deduped)})
+
     # Filter out offers with infeasible connections
-    feasible = [o for o in offers if _check_connection_feasible(o, conn_buffer)]
+    feasible = [o for o in deduped if _check_connection_feasible(o, conn_buffer)]
     if not feasible:
-        feasible = offers  # Fall back to all if none are feasible
+        feasible = deduped  # Fall back to all if none are feasible
         logger.info("all_offers_infeasible_connections, using all offers anyway")
 
     # Score with personalized preferences
@@ -616,7 +654,12 @@ def _rank_options(state: AgentGraphState) -> AgentGraphState:
     options_by_offer_id: dict[str, dict[str, Any]] = {}
     ranked: list[dict[str, Any]] = []
 
-    for idx, offer in enumerate(scored[:3], start=1):
+    # Show up to 3 truly distinct options
+    top = scored[:3]
+    if len(top) == 1:
+        logger.info("only_one_unique_itinerary_after_dedup", extra={"total_offers": len(offers)})
+
+    for idx, offer in enumerate(top, start=1):
         offer_id = str(offer.get("id") or f"offer_{idx}")
         total_amount = str(offer.get("total_amount") or "0")
         total_currency = str(offer.get("total_currency") or "USD")
@@ -624,6 +667,17 @@ def _rank_options(state: AgentGraphState) -> AgentGraphState:
         offer_legs = _extract_offer_legs(offer)
         stops = _count_stops(offer)
         duration = _compute_duration_minutes(offer)
+
+        # Extract cabin/fare class from Duffel offer if available
+        fare_label = ""
+        try:
+            slices = offer.get("slices") or []
+            if slices and isinstance(slices[0], dict):
+                fare_brand = slices[0].get("fare_brand_name") or ""
+                cabin = (slices[0].get("segments") or [{}])[0].get("passengers", [{}])[0].get("cabin_class_marketing_name", "")
+                fare_label = fare_brand or cabin
+        except Exception:
+            pass
 
         route_points = [str(x.get("from")) for x in offer_legs if x.get("from")] + (
             [str(offer_legs[-1].get("to"))] if offer_legs and offer_legs[-1].get("to") else []
@@ -649,7 +703,7 @@ def _rank_options(state: AgentGraphState) -> AgentGraphState:
         ranked.append({
             "option_id": offer_id,
             "score": float(idx),
-            "summary": f"{route_chain} · arrive {arrival_display or 'TBD'} · {price_display} · {stops} stop{'s' if stops != 1 else ''}" + (f" · {duration // 60}h {duration % 60}m" if duration else ""),
+            "summary": f"{route_chain} · arrive {arrival_display or 'TBD'} · {price_display}" + (f" · {fare_label}" if fare_label else "") + f" · {stops} stop{'s' if stops != 1 else ''}" + (f" · {duration // 60}h {duration % 60}m" if duration else ""),
             "legs": offer_legs or [{"from": primary.get("origin"), "to": primary.get("destination"), "arrival_time": arrival_time}],
             "modality": "flight",
             "price_display": price_display,
@@ -895,13 +949,6 @@ async def _confirm_verify_offer(state: AgentConfirmGraphState) -> AgentConfirmGr
 async def _confirm_create_order(state: AgentConfirmGraphState) -> AgentConfirmGraphState:
     if not state.get("can_apply"):
         return {"checkpoint_events": state.get("checkpoint_events", [])}
-    if state.get("stale_offer"):
-        return {
-            "can_apply": False,
-            "error_message": "Selected fare is no longer available. Re-run agent for fresh options.",
-            "checkpoint_events": state.get("checkpoint_events", []),
-        }
-
     selected = str(state.get("selected_option_id") or "")
 
     # No-offers mode: cannot create order
@@ -924,98 +971,153 @@ async def _confirm_create_order(state: AgentConfirmGraphState) -> AgentConfirmGr
     option_ctx = state.get("option_ctx") or {}
     duffel_passengers = state.get("duffel_passengers") or []
     passenger_details = state.get("passenger_details") or []
+    is_stale = bool(state.get("stale_offer"))
 
+    # If offer is stale, skip straight to fresh search retry
+    if not is_stale:
+        try:
+            from integrations.duffel_client import create_order
+
+            passengers_payload: list[dict[str, Any]] = []
+            for i, duffel_p in enumerate(duffel_passengers):
+                pid = duffel_p.get("id")
+                base = passenger_details[i] if i < len(passenger_details) else (passenger_details[-1] if passenger_details else {})
+                passengers_payload.append(_clean_passenger_payload(base=base, pid=pid))
+
+            order_payload = {
+                "data": {
+                    "selected_offers": [selected],
+                    "payments": option_ctx.get("payments") or [],
+                    "passengers": passengers_payload,
+                }
+            }
+            order_resp = await create_order(order_payload=order_payload)
+            order_id = (order_resp.get("data") or {}).get("id")
+            _append_checkpoint(state, node="confirm_create_order_live", details={"order_id": order_id})
+            return {
+                "duffel_order_id": order_id,
+                "applied_option_id": selected,
+                "checkpoint_events": state.get("checkpoint_events", []),
+            }
+        except Exception as e:
+            code = _extract_http_status(e)
+            err_codes = _extract_http_error_codes(e)
+
+            if code == 422:
+                non_retry_codes = {"invalid_phone_number", "invalid_email", "validation_required", "born_on_does_not_match"}
+                retry_allowed = not any(c in non_retry_codes for c in err_codes)
+                _append_checkpoint(state, node="confirm_create_order_422", details={"status_code": code, "retry": retry_allowed, "codes": err_codes})
+
+                if not retry_allowed:
+                    return {
+                        "can_apply": False,
+                        "error_message": f"Booking rejected by provider: {', '.join(err_codes)}. Check passenger details.",
+                        "checkpoint_events": state.get("checkpoint_events", []),
+                    }
+
+                # Retry with fresh search
+                try:
+                    from agent.tools import search_alternatives
+                    from integrations.duffel_client import create_order as create_order_retry
+
+                    trip_context = state.get("trip_context") or {}
+                    search = await search_alternatives(trip_context=trip_context, simulate_disruption=None)
+                    orq = (search.get("orq") or {}).get("data") or {}
+                    fresh_offers = orq.get("offers") or []
+                    fresh_passengers = orq.get("passengers") or []
+                    if not fresh_offers:
+                        raise RuntimeError("No fresh offers available")
+
+                    fresh = fresh_offers[0]
+                    fresh_id = str(fresh.get("id") or "")
+                    fresh_amount = str(fresh.get("total_amount") or "0")
+                    fresh_currency = str(fresh.get("total_currency") or "USD")
+
+                    passengers_payload_retry: list[dict[str, Any]] = []
+                    for i, duffel_p in enumerate(fresh_passengers):
+                        pid = duffel_p.get("id")
+                        base = passenger_details[i] if i < len(passenger_details) else (passenger_details[-1] if passenger_details else {})
+                        passengers_payload_retry.append(_clean_passenger_payload(base=base, pid=pid))
+
+                    retry_payload = {
+                        "data": {
+                            "selected_offers": [fresh_id],
+                            "payments": [{"type": "balance", "currency": fresh_currency, "amount": fresh_amount}],
+                            "passengers": passengers_payload_retry,
+                        }
+                    }
+                    retry_resp = await create_order_retry(order_payload=retry_payload)
+                    order_id = (retry_resp.get("data") or {}).get("id")
+                    _append_checkpoint(state, node="confirm_create_order_retry_success", details={"order_id": order_id, "fresh_offer_id": fresh_id})
+                    return {
+                        "duffel_order_id": order_id,
+                        "applied_option_id": fresh_id,
+                        "checkpoint_events": state.get("checkpoint_events", []),
+                    }
+                except Exception:
+                    _append_checkpoint(state, node="confirm_create_order_retry_failed")
+                    return {
+                        "can_apply": False,
+                        "error_message": "Selected fare expired. Re-run agent for fresh options.",
+                        "checkpoint_events": state.get("checkpoint_events", []),
+                    }
+
+            _append_checkpoint(state, node="confirm_create_order_error", details={"status_code": code})
+            return {
+                "can_apply": False,
+                "error_message": "Booking provider failed. Please retry shortly.",
+                "checkpoint_events": state.get("checkpoint_events", []),
+            }
+
+    # Stale offer path: do a fresh search and book the best match
+    _append_checkpoint(state, node="confirm_stale_offer_retry")
     try:
-        from integrations.duffel_client import create_order
+        from agent.tools import search_alternatives
+        from integrations.duffel_client import create_order as create_order_fresh
 
-        passengers_payload: list[dict[str, Any]] = []
-        for i, duffel_p in enumerate(duffel_passengers):
-            pid = duffel_p.get("id")
+        trip_context = state.get("trip_context") or {}
+        search = await search_alternatives(trip_context=trip_context, simulate_disruption=None)
+        orq = (search.get("orq") or {}).get("data") or {}
+        fresh_offers = orq.get("offers") or []
+        fresh_passengers = orq.get("passengers") or []
+        if not fresh_offers:
+            return {
+                "can_apply": False,
+                "error_message": "Original fare expired and no fresh alternatives found. Try again later.",
+                "checkpoint_events": state.get("checkpoint_events", []),
+            }
+
+        fresh = sorted(fresh_offers, key=lambda o: _score_offer(o))[0]
+        fresh_id = str(fresh.get("id") or "")
+        fresh_amount = str(fresh.get("total_amount") or "0")
+        fresh_currency = str(fresh.get("total_currency") or "USD")
+
+        pax_payload: list[dict[str, Any]] = []
+        for i, dp in enumerate(fresh_passengers):
+            pid = dp.get("id")
             base = passenger_details[i] if i < len(passenger_details) else (passenger_details[-1] if passenger_details else {})
-            passengers_payload.append(_clean_passenger_payload(base=base, pid=pid))
+            pax_payload.append(_clean_passenger_payload(base=base, pid=pid))
 
-        order_payload = {
+        fresh_order_payload = {
             "data": {
-                "selected_offers": [selected],
-                "payments": option_ctx.get("payments") or [],
-                "passengers": passengers_payload,
+                "selected_offers": [fresh_id],
+                "payments": [{"type": "balance", "currency": fresh_currency, "amount": fresh_amount}],
+                "passengers": pax_payload,
             }
         }
-        order_resp = await create_order(order_payload=order_payload)
-        order_id = (order_resp.get("data") or {}).get("id")
-        _append_checkpoint(state, node="confirm_create_order_live", details={"order_id": order_id})
+        resp = await create_order_fresh(order_payload=fresh_order_payload)
+        order_id = (resp.get("data") or {}).get("id")
+        _append_checkpoint(state, node="confirm_stale_retry_success", details={"order_id": order_id, "fresh_offer_id": fresh_id})
         return {
             "duffel_order_id": order_id,
-            "applied_option_id": selected,
+            "applied_option_id": fresh_id,
             "checkpoint_events": state.get("checkpoint_events", []),
         }
-    except Exception as e:
-        code = _extract_http_status(e)
-        err_codes = _extract_http_error_codes(e)
-
-        if code == 422:
-            non_retry_codes = {"invalid_phone_number", "invalid_email", "validation_required", "born_on_does_not_match"}
-            retry_allowed = not any(c in non_retry_codes for c in err_codes)
-            _append_checkpoint(state, node="confirm_create_order_422", details={"status_code": code, "retry": retry_allowed, "codes": err_codes})
-
-            if not retry_allowed:
-                return {
-                    "can_apply": False,
-                    "error_message": f"Booking rejected by provider: {', '.join(err_codes)}. Check passenger details.",
-                    "checkpoint_events": state.get("checkpoint_events", []),
-                }
-
-            # Retry with fresh search
-            try:
-                from agent.tools import search_alternatives
-                from integrations.duffel_client import create_order as create_order_retry
-
-                trip_context = state.get("trip_context") or {}
-                search = await search_alternatives(trip_context=trip_context, simulate_disruption=None)
-                orq = (search.get("orq") or {}).get("data") or {}
-                fresh_offers = orq.get("offers") or []
-                fresh_passengers = orq.get("passengers") or []
-                if not fresh_offers:
-                    raise RuntimeError("No fresh offers available")
-
-                fresh = fresh_offers[0]
-                fresh_id = str(fresh.get("id") or "")
-                fresh_amount = str(fresh.get("total_amount") or "0")
-                fresh_currency = str(fresh.get("total_currency") or "USD")
-
-                passengers_payload_retry: list[dict[str, Any]] = []
-                for i, duffel_p in enumerate(fresh_passengers):
-                    pid = duffel_p.get("id")
-                    base = passenger_details[i] if i < len(passenger_details) else (passenger_details[-1] if passenger_details else {})
-                    passengers_payload_retry.append(_clean_passenger_payload(base=base, pid=pid))
-
-                retry_payload = {
-                    "data": {
-                        "selected_offers": [fresh_id],
-                        "payments": [{"type": "balance", "currency": fresh_currency, "amount": fresh_amount}],
-                        "passengers": passengers_payload_retry,
-                    }
-                }
-                retry_resp = await create_order_retry(order_payload=retry_payload)
-                order_id = (retry_resp.get("data") or {}).get("id")
-                _append_checkpoint(state, node="confirm_create_order_retry_success", details={"order_id": order_id, "fresh_offer_id": fresh_id})
-                return {
-                    "duffel_order_id": order_id,
-                    "applied_option_id": fresh_id,
-                    "checkpoint_events": state.get("checkpoint_events", []),
-                }
-            except Exception:
-                _append_checkpoint(state, node="confirm_create_order_retry_failed")
-                return {
-                    "can_apply": False,
-                    "error_message": "Selected fare expired. Re-run agent for fresh options.",
-                    "checkpoint_events": state.get("checkpoint_events", []),
-                }
-
-        _append_checkpoint(state, node="confirm_create_order_error", details={"status_code": code})
+    except Exception:
+        _append_checkpoint(state, node="confirm_stale_retry_failed")
         return {
             "can_apply": False,
-            "error_message": "Booking provider failed. Please retry shortly.",
+            "error_message": "Original fare expired. Fresh search also failed. Please re-run the agent.",
             "checkpoint_events": state.get("checkpoint_events", []),
         }
 

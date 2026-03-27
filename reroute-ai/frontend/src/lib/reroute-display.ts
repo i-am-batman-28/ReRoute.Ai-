@@ -42,8 +42,9 @@ export function getRankedOptionDisplay(opt: RankedOptionDTO, index: number): Ran
     typeof lastLeg?.arrival_time === "string" ? lastLeg.arrival_time : typeof leg?.arrival_time === "string" ? leg.arrival_time : undefined;
 
   const summary = opt.summary;
-  const arriveMatch = summary.match(/arrive=([^\s]+)/);
-  const costMatch = summary.match(/cost=([A-Z]{3})\s*([\d.]+)/i);
+  const arriveMatch = summary.match(/arrive=([^\s]+)/) ?? summary.match(/arrive\s+([^\s·]+)/);
+  // Try the new price_display field first, then regex fallback for both old (cost=USD 123) and new (· USD 123 ·) formats
+  const costMatch = summary.match(/cost=([A-Z]{3})\s*([\d.]+)/i) ?? summary.match(/·\s*([A-Z]{3})\s+([\d,.]+)\s*·/i);
 
   const chainFromLegs = (opt.legs ?? [])
     .map((x) => (typeof x?.from === "string" ? x.from : null))
@@ -59,10 +60,17 @@ export function getRankedOptionDisplay(opt: RankedOptionDTO, index: number): Ran
           .split(/\s+arrive=/)[0]
           ?.trim() || `Option ${index + 1}`);
 
+  const directArrival = (opt as Record<string, unknown>).arrival_display;
   const arrivalIso = arriveMatch?.[1] ?? arrivalFromLeg;
-  const arrivalLabel = formatFriendlyDateTime(arrivalIso);
+  const arrivalLabel = typeof directArrival === "string" && directArrival
+    ? directArrival
+    : formatFriendlyDateTime(arrivalIso);
 
-  const priceLabel = costMatch ? `${costMatch[1]} ${costMatch[2]}` : null;
+  // Prefer direct price_display field from backend, fallback to regex extraction
+  const directPrice = (opt as Record<string, unknown>).price_display;
+  const priceLabel = typeof directPrice === "string" && directPrice
+    ? directPrice
+    : costMatch ? `${costMatch[1]} ${costMatch[2]}` : null;
 
   const baseModality = (opt.modality ?? "flight").replace(/_/g, " ");
   const stopCount = Math.max(0, (opt.legs?.length ?? 1) - 1);

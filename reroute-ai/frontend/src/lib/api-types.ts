@@ -61,6 +61,11 @@ export type RankedOptionDTO = {
   summary: string;
   legs: Record<string, unknown>[];
   modality?: string;
+  llm_explanation?: string | null;
+  price_display?: string | null;
+  arrival_display?: string | null;
+  stops?: number;
+  duration_minutes?: number | null;
 };
 
 export type AgentProposeResponse = {
@@ -68,12 +73,17 @@ export type AgentProposeResponse = {
   phase: string;
   requires_user_review: boolean;
   disruption_summary: string | null;
+  llm_disruption_narrative?: string | null;
   ranked_options: RankedOptionDTO[];
   tool_trace_summary: string[];
   cascade_preview: Record<string, unknown> | null;
+  cascade_narrative?: string | null;
   compensation_draft: Record<string, unknown> | null;
   notification_status: Record<string, unknown> | null;
   search_meta?: Record<string, unknown> | null;
+  offers_expired_at?: string | null;
+  price_comparison?: Record<string, unknown> | null;
+  passenger_validation?: Record<string, unknown> | null;
 };
 
 export type AgentConfirmResponse = {

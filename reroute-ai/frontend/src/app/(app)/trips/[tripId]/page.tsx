@@ -53,12 +53,6 @@ export default function TripWorkspacePage() {
     <>
       {bridgeState === "ready" && detail ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6">
-          <Link
-            href="/trips"
-            className="text-sm font-medium text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline"
-          >
-            ← Trips
-          </Link>
           {proposal ? (
             <button
               type="button"

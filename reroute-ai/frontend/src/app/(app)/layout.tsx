@@ -27,6 +27,7 @@ export default function AppSectionLayout({ children }: { children: ReactNode }) 
   return (
     <div
       className={`${playfair.variable} ${instrumentSans.variable} ${instrumentSerif.variable} flex min-h-full flex-1 flex-col bg-zinc-950`}
+      style={{ fontFamily: "var(--font-family-bauhuas-std-medium)", WebkitFontKerning: "auto" }}
     >
       <RerouteSessionProvider>
         <AppShell>{children}</AppShell>

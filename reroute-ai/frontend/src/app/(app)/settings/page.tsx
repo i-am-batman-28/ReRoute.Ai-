@@ -169,7 +169,7 @@ export default function SettingsPage() {
   if (!user) return null;
 
   return (
-    <div className="w-full px-6 py-8">
+    <div className="mx-auto w-full max-w-6xl px-6 py-8">
       <div className="mb-8">
         <Link
           href="/dashboard"

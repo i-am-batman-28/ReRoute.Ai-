@@ -45,7 +45,7 @@ export default function DashboardOverviewPage() {
 
   if (error) {
     return (
-      <div className="w-full px-6 py-16 text-center">
+      <div className="mx-auto w-full max-w-6xl px-6 py-16 text-center">
         <p className="text-sm text-red-400">{error}</p>
         <button
           type="button"
@@ -62,55 +62,47 @@ export default function DashboardOverviewPage() {
   const pending = monitor?.total_pending_proposals ?? 0;
 
   return (
-    <div className="w-full px-6 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--fg)]">Overview</h1>
-          <p className="mt-1 text-sm text-[color:var(--subtle)]">Trips, monitoring, and agent activity across your workspace.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--stroke)] bg-[color:var(--surface-1)] px-3 py-1.5 text-xs font-medium text-[color:var(--muted)]">
-            <span className="relative flex h-2 w-2">
-              <span
-                className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--primary)] opacity-35"
-                aria-hidden
-              />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[color:var(--primary)]" aria-hidden />
-            </span>
-            Monitoring active
-          </span>
-        </div>
-      </div>
+    <div className="mx-auto w-full max-w-6xl px-6 py-8">
+      <section className="rounded-2xl border border-[color:var(--stroke)] bg-[linear-gradient(180deg,color-mix(in_oklab,var(--primary),white_88%)_0%,color-mix(in_oklab,var(--primary),white_95%)_100%)] p-6 sm:p-8">
+        <h1 className="text-2xl font-semibold leading-snug tracking-tight text-[color:var(--fg)]">
+          {user?.full_name?.trim()
+            ? `Hi ${user.full_name.trim().split(" ")[0]}, ready for your next trip?`
+            : "Hi there, ready for your next trip?"}
+        </h1>
+        <p className="mt-2 text-sm text-[color:var(--muted)]">
+          Here's a quick look at your trips and live updates.
+        </p>
+      </section>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Link
           href="/trips"
-          className="rr-card rounded-xl p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-2)]"
+          className="rr-card rounded-2xl border border-[color:var(--stroke)] bg-[color:var(--surface-0)] p-5 transition hover:shadow-[var(--shadow-2)]"
         >
           <div className="flex items-center gap-2 text-[color:var(--subtle)]">
             <MapPin className="h-4 w-4 text-[color:var(--primary)]" aria-hidden />
-            <span className="text-xs font-medium uppercase tracking-wide">Trips</span>
+            <span className="text-xs font-semibold tracking-wide">Trips</span>
           </div>
           <p className="mt-2 text-3xl font-semibold tabular-nums text-[color:var(--fg)]">{trips.length}</p>
           <p className="mt-1 text-sm text-[color:var(--subtle)]">Itineraries in your account</p>
         </Link>
         <Link
           href="/monitor"
-          className="rr-card rounded-xl p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-2)]"
+          className="rr-card rounded-2xl border border-[color:var(--stroke)] bg-[color:var(--surface-0)] p-5 transition hover:shadow-[var(--shadow-2)]"
         >
           <div className="flex items-center gap-2 text-[color:var(--subtle)]">
             <Radar className="h-4 w-4 text-[color:var(--primary)]" aria-hidden />
-            <span className="text-xs font-medium uppercase tracking-wide">Monitor</span>
+            <span className="text-xs font-semibold tracking-wide">Monitor</span>
           </div>
           <p className="mt-2 text-3xl font-semibold tabular-nums text-[color:var(--warn)]">{pending}</p>
           <p className="mt-1 text-sm text-[color:var(--subtle)]">Pending proposals (all trips)</p>
         </Link>
         <Link
           href="/activity"
-          className="rr-card rounded-xl p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-2)]"
+          className="rr-card rounded-2xl border border-[color:var(--stroke)] bg-[color:var(--surface-0)] p-5 transition hover:shadow-[var(--shadow-2)]"
         >
           <div className="flex items-center gap-2 text-[color:var(--subtle)]">
-            <span className="text-xs font-medium uppercase tracking-wide">Activity</span>
+            <span className="text-xs font-semibold tracking-wide">Activity</span>
           </div>
           <p className="mt-2 text-sm font-medium text-[color:var(--fg)]">Disruption timeline</p>
           <p className="mt-1 text-sm text-[color:var(--subtle)]">Events across all trips</p>

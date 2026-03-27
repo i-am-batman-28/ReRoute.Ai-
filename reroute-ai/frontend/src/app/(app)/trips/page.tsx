@@ -20,6 +20,7 @@ export default function TripsPage() {
   const [trips, setTrips] = useState<TripPublic[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [tripToDelete, setTripToDelete] = useState<{ id: string; label: string } | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -59,15 +60,15 @@ export default function TripsPage() {
     }
   }
 
-  async function deleteTrip(id: string, label: string) {
+  async function deleteTrip(id: string) {
     if (!user) return;
-    if (!window.confirm(`Delete “${label}”? This cannot be undone.`)) return;
     setDeletingId(id);
     try {
       await apiDeleteTrip(id);
       await load();
+      setTripToDelete(null);
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Could not delete trip.");
+      setError(e instanceof Error ? e.message : "Could not delete trip.");
     } finally {
       setDeletingId(null);
     }
@@ -84,7 +85,7 @@ export default function TripsPage() {
 
   if (error) {
     return (
-      <div className="w-full px-6 py-16 text-center">
+      <div className="mx-auto w-full max-w-6xl px-6 py-16 text-center">
         <p className="text-sm text-red-400">{error}</p>
         <button
           type="button"
@@ -98,7 +99,7 @@ export default function TripsPage() {
   }
 
   return (
-    <div className="w-full px-6 py-8">
+    <div className="mx-auto w-full max-w-6xl px-6 py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--fg)]">Trips</h1>
@@ -190,7 +191,7 @@ export default function TripsPage() {
                 <button
                   type="button"
                   disabled={deletingId === t.id}
-                  onClick={() => void deleteTrip(t.id, t.title?.trim() || "Untitled trip")}
+                  onClick={() => setTripToDelete({ id: t.id, label: t.title?.trim() || "Untitled trip" })}
                   className="inline-flex items-center gap-1 rounded-lg border border-[color:color-mix(in_oklab,var(--danger),transparent_55%)] bg-[color:color-mix(in_oklab,var(--danger),transparent_90%)] px-2.5 py-1.5 text-xs font-medium text-[color:var(--danger)] transition hover:bg-[color:color-mix(in_oklab,var(--danger),transparent_85%)] disabled:opacity-50"
                   aria-label={`Delete ${t.title ?? "trip"}`}
                 >
@@ -202,6 +203,40 @@ export default function TripsPage() {
           })}
         </ul>
       )}
+
+      {tripToDelete ? (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center px-4">
+          <div className="w-full max-w-lg rounded-xl border border-[color:var(--stroke)] bg-[color:var(--surface-0)] p-6 shadow-xl">
+            <h2 className="text-base font-semibold text-[color:var(--fg)]">Delete trip?</h2>
+            <p className="mt-2 text-sm text-[color:var(--subtle)]">
+              Delete “{tripToDelete.label}”? This cannot be undone.
+            </p>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setTripToDelete(null)}
+                disabled={deletingId === tripToDelete.id}
+                className="rounded-lg border border-[color:var(--stroke)] px-3 py-1.5 text-xs font-medium text-[color:var(--muted)] transition hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void deleteTrip(tripToDelete.id)}
+                disabled={deletingId === tripToDelete.id}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[color:color-mix(in_oklab,var(--danger),transparent_55%)] bg-[color:color-mix(in_oklab,var(--danger),transparent_90%)] px-4 py-2 text-sm font-semibold text-[color:var(--danger)] transition hover:bg-[color:color-mix(in_oklab,var(--danger),transparent_85%)] disabled:opacity-50"
+              >
+                {deletingId === tripToDelete.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                )}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

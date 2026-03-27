@@ -26,7 +26,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)", color: "var(--fg)" }}>
       {/* Hero */}
-      <section className="relative flex min-h-[min(100dvh,920px)] flex-col overflow-hidden">
+      <section className="relative flex min-h-[min(88dvh,820px)] flex-col overflow-hidden">
         <div className="absolute inset-0">
           <Image
             src="/herobg-2.webp"

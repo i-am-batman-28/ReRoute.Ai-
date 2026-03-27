@@ -199,11 +199,19 @@ export async function apiAgentProposeJobStatus(taskId: string): Promise<AgentPro
   return res.json() as Promise<AgentProposeJobStatus>;
 }
 
-export async function apiAgentConfirm(proposalId: string, selectedOptionId: string): Promise<AgentConfirmResponse> {
+export async function apiAgentConfirm(
+  proposalId: string,
+  selectedOptionId: string,
+  options?: { acknowledgeDisruptionUncertainty?: boolean },
+): Promise<AgentConfirmResponse> {
   const res = await authFetch(`${getApiBase()}/agent/confirm`, {
     method: "POST",
     headers: jsonHeaders,
-    body: JSON.stringify({ proposal_id: proposalId, selected_option_id: selectedOptionId }),
+    body: JSON.stringify({
+      proposal_id: proposalId,
+      selected_option_id: selectedOptionId,
+      acknowledge_disruption_uncertainty: Boolean(options?.acknowledgeDisruptionUncertainty),
+    }),
   });
   if (!res.ok) throw new Error(await apiErrorMessage(res));
   return res.json() as Promise<AgentConfirmResponse>;

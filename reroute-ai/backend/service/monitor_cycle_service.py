@@ -13,16 +13,32 @@ from agent.tools import fetch_flight_status, fetch_weather_signals
 from config import get_settings
 from dao.disruption_event_dao import DisruptionEventDAO
 from dao.trip_dao import TripDAO
+from integrations.location_resolver import resolve_coords
 
 logger = logging.getLogger(__name__)
 
 
 def _weather_codes_latest(weather: dict[str, Any]) -> str:
+    # New shape: weather.origin_latest / weather.destination_latest with scalar fields.
+    origin = weather.get("origin_latest") if isinstance(weather.get("origin_latest"), dict) else {}
+    destination = weather.get("destination_latest") if isinstance(weather.get("destination_latest"), dict) else {}
+    if origin or destination:
+        signature = {
+            "origin_code": origin.get("weather_code"),
+            "origin_rain": origin.get("precipitation_probability"),
+            "destination_code": destination.get("weather_code"),
+            "destination_rain": destination.get("precipitation_probability"),
+        }
+        return json.dumps(signature, separators=(",", ":"), sort_keys=True)
+
+    # Backward compatibility with older latest.weather_code list/scalar payloads.
     latest = weather.get("latest") or {}
     if isinstance(latest, dict):
         codes = latest.get("weather_code")
         if isinstance(codes, list):
             return json.dumps(codes[-3:], separators=(",", ":"))
+        if codes is not None:
+            return str(codes)
     return ""
 
 
@@ -104,17 +120,37 @@ async def run_monitor_cycle(*, session: AsyncSession) -> dict[str, int]:
                 continue
 
             wx = legs.get("weather") if isinstance(legs.get("weather"), dict) else {}
-            dest_lat, dest_lon = wx.get("destination_lat"), wx.get("destination_lon")
-            weather: dict[str, Any]
+            origin_iata = str(pf.get("origin") or "").upper()
+            dest_iata = str(pf.get("destination") or "").upper()
+            origin_city = str(snap.get("origin_city") or "")
+            dest_city = str(snap.get("destination_city") or "")
+
+            origin_lat = wx.get("origin_lat")
+            origin_lon = wx.get("origin_lon")
+            dest_lat = wx.get("destination_lat")
+            dest_lon = wx.get("destination_lon")
+            if origin_lat is None or origin_lon is None:
+                o_lat, o_lon = await resolve_coords(iata=origin_iata, city_name=origin_city)
+                origin_lat = origin_lat if origin_lat is not None else o_lat
+                origin_lon = origin_lon if origin_lon is not None else o_lon
+            if dest_lat is None or dest_lon is None:
+                d_lat, d_lon = await resolve_coords(iata=dest_iata, city_name=dest_city)
+                dest_lat = dest_lat if dest_lat is not None else d_lat
+                dest_lon = dest_lon if dest_lon is not None else d_lon
+
+            weather: dict[str, Any] = {"source": "monitor_cycle", "origin_latest": {}, "destination_latest": {}}
+            if origin_lat is not None and origin_lon is not None:
+                try:
+                    ow = await fetch_weather_signals(latitude=float(origin_lat), longitude=float(origin_lon))
+                    weather["origin_latest"] = ow.get("latest") if isinstance(ow.get("latest"), dict) else {}
+                except Exception:
+                    weather["origin_latest"] = {}
             if dest_lat is not None and dest_lon is not None:
                 try:
-                    weather = await fetch_weather_signals(
-                        latitude=float(dest_lat), longitude=float(dest_lon)
-                    )
+                    dw = await fetch_weather_signals(latitude=float(dest_lat), longitude=float(dest_lon))
+                    weather["destination_latest"] = dw.get("latest") if isinstance(dw.get("latest"), dict) else {}
                 except Exception:
-                    weather = {"source": "error", "latest": {}}
-            else:
-                weather = {"source": "skipped_missing_coords", "latest": {}}
+                    weather["destination_latest"] = {}
 
             signature = _scan_signature(flight_status, weather)
             prev_sig: str | None = None

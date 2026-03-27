@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from dao.itinerary_segment_dao import ItinerarySegmentDAO
 from dao.leg_dao import LegDAO
 from dao.trip_dao import TripDAO
+from integrations.location_resolver import resolve_coords
 from model.user_model import User
 from schema.itinerary_schemas import ItinerarySegmentPublic, TripDetailPublic, TripLegPublic
 from schema.trip_schemas import TripCreateRequest, TripPublic, TripUpdateRequest
@@ -50,6 +51,35 @@ def _hydrate_user_block(snapshot: dict, user: User) -> None:
         }
 
 
+async def _auto_fill_weather_coords(snapshot: dict) -> None:
+    """Best-effort weather destination/origin coords from IATA/city fields."""
+    legs = snapshot.get("legs")
+    if not isinstance(legs, dict):
+        return
+    primary = legs.get("primary_flight")
+    if not isinstance(primary, dict):
+        return
+
+    wx = legs.get("weather")
+    if not isinstance(wx, dict):
+        wx = {}
+        legs["weather"] = wx
+
+    if wx.get("destination_lat") is None or wx.get("destination_lon") is None:
+        dest = primary.get("destination")
+        if isinstance(dest, str) and dest.strip():
+            coords = await resolve_coords(dest)
+            if coords:
+                wx["destination_lat"], wx["destination_lon"] = coords
+
+    if wx.get("origin_lat") is None or wx.get("origin_lon") is None:
+        origin = primary.get("origin")
+        if isinstance(origin, str) and origin.strip():
+            coords = await resolve_coords(origin)
+            if coords:
+                wx["origin_lat"], wx["origin_lon"] = coords
+
+
 async def create_trip(
     *,
     user: User,
@@ -59,6 +89,7 @@ async def create_trip(
     _validate_snapshot_shape(payload.snapshot)
     snapshot = copy.deepcopy(payload.snapshot)
     _hydrate_user_block(snapshot, user)
+    await _auto_fill_weather_coords(snapshot)
     trip_id = str(uuid.uuid4())
     snapshot["trip_id"] = trip_id
 
@@ -160,6 +191,7 @@ async def update_trip(
         _validate_snapshot_shape(payload.snapshot)
         snap = copy.deepcopy(payload.snapshot)
         snap["trip_id"] = trip_id
+        await _auto_fill_weather_coords(snap)
         updates["snapshot"] = snap
     if payload.itinerary_revision is not None:
         updates["itinerary_revision"] = payload.itinerary_revision

@@ -30,6 +30,17 @@ function localDatetimeToUtcIso(value: string): string {
   return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
 }
 
+function parseYmdDate(value: string): Date | null {
+  const t = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return null;
+  const d = new Date(`${t}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function isValidE164Phone(value: string): boolean {
+  return /^\+\d{8,15}$/.test(value.trim());
+}
+
 export type TripFormSeed = {
   tripId: string;
   title: string | null;
@@ -133,6 +144,32 @@ export function TripForm({
         setSaving(false);
         return;
       }
+      if (!p.phoneNumber.trim()) {
+        setError("Each traveler needs a phone number in international format (for Duffel booking).");
+        setSaving(false);
+        return;
+      }
+      if (!isValidE164Phone(p.phoneNumber)) {
+        setError("Traveler phone must use E.164 format, e.g. +14155552671.");
+        setSaving(false);
+        return;
+      }
+    }
+    const travelDate = parseYmdDate(form.date);
+    if (travelDate) {
+      for (let i = 0; i < filled.length; i += 1) {
+        const dob = parseYmdDate(filled[i].bornOn);
+        if (!dob) {
+          setError(`Traveler ${i + 1}: date of birth must be YYYY-MM-DD.`);
+          setSaving(false);
+          return;
+        }
+        if (dob >= travelDate) {
+          setError(`Traveler ${i + 1}: date of birth must be before travel date.`);
+          setSaving(false);
+          return;
+        }
+      }
     }
 
     const olat = parseOptionalCoord(form.weatherOriginLat);
@@ -167,7 +204,7 @@ export function TripForm({
         budgetBand: form.budgetBand,
         passengers: filled.map((p) => ({
           ...p,
-          phoneNumber: p.phoneNumber.trim() || "+10000000000",
+          phoneNumber: p.phoneNumber.trim(),
         })),
         connectionDepartureAfterArrivalMinutes: form.connectionMins,
         hotelCheckInBufferMinutes: form.hotelBufferMins,
@@ -527,16 +564,18 @@ export function TripForm({
                 </div>
                 <div className="sm:col-span-2">
                   <label className={labelClass} htmlFor={`phone-${i}`}>
-                    Phone
+                    Phone *
                   </label>
                   <input
                     id={`phone-${i}`}
                     type="tel"
                     value={p.phoneNumber}
                     onChange={(e) => setPassenger(i, { phoneNumber: e.target.value })}
-                    placeholder="+1…"
+                    placeholder="+14155552671"
                     className={inputClass}
+                    required={i === 0}
                   />
+                  <p className="mt-1 text-xs text-zinc-600">Use international format (E.164), for example +14155552671.</p>
                 </div>
               </div>
             </div>

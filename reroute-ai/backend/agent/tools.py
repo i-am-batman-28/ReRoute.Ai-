@@ -36,14 +36,21 @@ async def fetch_flight_status(
 async def fetch_weather_signals(*, latitude: float, longitude: float) -> dict[str, Any]:
     """Open-Meteo hourly weather signals used for radar risk."""
     payload = await fetch_openmeteo_hourly(latitude=latitude, longitude=longitude)
+    hourly = payload.get("hourly", {}) if isinstance(payload, dict) else {}
+    def _latest(key: str):
+        vals = hourly.get(key, [])
+        if isinstance(vals, list) and vals:
+            return vals[-1]
+        return None
     return {
         "source": "open-meteo",
-        # Keep it compact; we just need the latest hour values.
+        # Keep it compact; we just need latest hour values.
         "latest": {
-            "time": payload.get("hourly", {}).get("time", [])[-1:] or [],
-            "precipitation_probability": payload.get("hourly", {}).get("precipitation_probability", [])[-1:] or [],
-            "weather_code": payload.get("hourly", {}).get("weather_code", [])[-1:] or [],
-            "wind_speed_10m": payload.get("hourly", {}).get("wind_speed_10m", [])[-1:] or [],
+            "time": _latest("time"),
+            "precipitation_probability": _latest("precipitation_probability"),
+            "weather_code": _latest("weather_code"),
+            "wind_speed_10m": _latest("wind_speed_10m"),
+            "temperature_2m": _latest("temperature_2m"),
         },
     }
 

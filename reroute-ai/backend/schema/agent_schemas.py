@@ -40,16 +40,20 @@ class RankedOptionDTO(BaseModel):
 class AgentProposeResponse(BaseModel):
     proposal_id: str
     phase: str
+    requires_user_review: bool = False
+    disruption_summary: str | None = None
     ranked_options: list[RankedOptionDTO] = Field(default_factory=list)
     tool_trace_summary: list[str] = Field(default_factory=list)
     cascade_preview: dict[str, Any] | None = None
     compensation_draft: dict[str, Any] | None = None
     notification_status: dict[str, Any] | None = None
+    search_meta: dict[str, Any] | None = None
 
 
 class AgentConfirmRequest(BaseModel):
     proposal_id: str
     selected_option_id: str
+    acknowledge_disruption_uncertainty: bool = False
 
 
 class AgentConfirmResponse(BaseModel):

@@ -3,6 +3,7 @@ import { Instrument_Sans, Instrument_Serif, Playfair_Display } from "next/font/g
 
 import { AppShell } from "@/components/app-shell";
 import { RerouteSessionProvider } from "@/components/reroute-session-provider";
+import { ChatWidget } from "@/components/chat/chat-widget";
 
 const playfair = Playfair_Display({
   weight: ["400", "500", "600"],
@@ -31,6 +32,7 @@ export default function AppSectionLayout({ children }: { children: ReactNode }) 
     >
       <RerouteSessionProvider>
         <AppShell>{children}</AppShell>
+        <ChatWidget />
       </RerouteSessionProvider>
     </div>
   );

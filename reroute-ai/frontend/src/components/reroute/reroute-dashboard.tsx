@@ -11,21 +11,25 @@ import {
   ChevronDown,
   ChevronRight,
   Cloud,
+  Droplets,
   ExternalLink,
   IndianRupee,
   Loader2,
   LogOut,
   MessageCircle,
   Mic,
+  MapPin,
   Plane,
   Plus,
   RotateCcw,
   ScrollText,
   Sofa,
   Sparkles,
+  Thermometer,
   TrainFront,
   TriangleAlert,
   UtensilsCrossed,
+  Wind,
   X,
 } from "lucide-react";
 
@@ -98,7 +102,10 @@ export type ReRouteDashboardBridge = {
   proposeError: string | null;
   creatingDemo: boolean;
   runPropose: (simulate?: string | null) => Promise<void>;
-  runConfirm: (selectedOptionId: string) => Promise<AgentConfirmResponse | null>;
+  runConfirm: (
+    selectedOptionId: string,
+    options?: { acknowledgeDisruptionUncertainty?: boolean },
+  ) => Promise<AgentConfirmResponse | null>;
   refresh: () => Promise<void>;
   createDemoTrip: () => Promise<void>;
 };
@@ -139,6 +146,25 @@ function eventDot(kind: string): LogDot {
   return "b";
 }
 
+function eventDelayMinutes(ev: DisruptionEventPublic): number | null {
+  const p = ev.payload;
+  if (!p || typeof p !== "object") return null;
+  const fs = (p as Record<string, unknown>).flight_status;
+  if (!fs || typeof fs !== "object") return null;
+  const raw = (fs as Record<string, unknown>).delay_minutes;
+  if (raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : null;
+}
+
+function delayLabel(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
 function buildApiLogs(events: DisruptionEventPublic[], toolTrace: string[] | undefined): LogLine[] {
   const rows: LogLine[] = [];
   let seq = 0;
@@ -166,7 +192,15 @@ function buildApiLogs(events: DisruptionEventPublic[], toolTrace: string[] | und
       children: (
         <>
           <span className="font-medium text-[color:var(--danger)]">{ev.kind}</span>
-          {ev.disruption_type ? <> · {ev.disruption_type}</> : null}
+          {ev.disruption_type ? (
+            <>
+              {" "}
+              · {ev.disruption_type}
+              {ev.disruption_type === "delayed" && eventDelayMinutes(ev) != null
+                ? ` (${delayLabel(eventDelayMinutes(ev) ?? 0)})`
+                : ""}
+            </>
+          ) : null}
         </>
       ),
     });
@@ -235,8 +269,15 @@ function apiBannerCopy(
     .filter((e) => e.disruption_type)
     .sort((a, x) => new Date(x.created_at).getTime() - new Date(a.created_at).getTime())[0];
   if (dis) {
+    const dly = dis.disruption_type === "delayed" ? eventDelayMinutes(dis) : null;
+    const title =
+      dis.disruption_type === "cancelled"
+        ? "Recorded disruption: cancelled"
+        : dis.disruption_type === "delayed"
+          ? `Recorded disruption: delayed${dly != null ? ` (${delayLabel(dly)})` : ""}`
+          : `Recorded disruption: ${dis.disruption_type ?? dis.kind}`;
     return {
-      title: `Recorded disruption: ${dis.disruption_type ?? dis.kind}`,
+      title,
       sub: "The agent used this when you last ran a proposal. Run the agent again to refresh ranked options.",
     };
   }
@@ -284,6 +325,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
   const [rippleOpen, setRippleOpen] = useState(false);
   const [cascadeTeaserOpen, setCascadeTeaserOpen] = useState(false);
   const [agentLogsOpen, setAgentLogsOpen] = useState(false);
+  const [ackDisruptionUncertainty, setAckDisruptionUncertainty] = useState(false);
 
   const tripKey = bridge?.tripId ?? "demo";
   const [confirmedOnceTripKey, setConfirmedOnceTripKey] = useState<string | null>(null);
@@ -390,16 +432,121 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
       .filter((e) => e.disruption_type)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
     if (dis) {
+      const dly = dis.disruption_type === "delayed" ? eventDelayMinutes(dis) : null;
+      const disLabel =
+        dis.disruption_type === "delayed" && dly != null
+          ? `${dis.disruption_type} (${delayLabel(dly)})`
+          : (dis.disruption_type ?? dis.kind);
       return {
         tone: "warn" as const,
-        text: `Disruption recorded (${dis.disruption_type ?? dis.kind}). Run the agent for ranked options.`,
+        text: `Disruption recorded (${disLabel}). Run the agent for ranked options.`,
       };
     }
     return {
       tone: "muted" as const,
-      text: "No open proposal yet — run the agent or simulate a disruption to generate ranked options.",
+      text: "No open proposal yet — run the agent to generate ranked options from live status.",
     };
   }, [bridge, confirmedOnceForTrip, isApiReady]);
+
+  const weatherRunSummary = useMemo(() => {
+    const parseSummaryLine = (line: string | undefined | null) => {
+      if (!line) return null;
+      const summary = line.replace(/^weather_(origin|destination):\s*/i, "").trim();
+      if (!summary || summary.toLowerCase() === "unavailable") return null;
+      const clean = summary.trim();
+      const parts = clean.split(",").map((p) => p.trim()).filter(Boolean);
+      return {
+        summary: clean,
+        condition: parts[0] ?? clean,
+        temp: parts.find((p) => /°C/i.test(p)) ?? null,
+        rain: parts.find((p) => /rain chance/i.test(p)) ?? null,
+        wind: parts.find((p) => /^wind\s/i.test(p)) ?? null,
+      };
+    };
+
+    const weatherCodeLabel = (code: unknown) => {
+      const n = typeof code === "number" ? code : Number(code);
+      if (!Number.isFinite(n)) return "Current conditions";
+      if (n === 0) return "Clear sky";
+      if ([1, 2, 3].includes(n)) return "Partly cloudy";
+      if ([45, 48].includes(n)) return "Fog";
+      if ([51, 53, 55, 56, 57].includes(n)) return "Drizzle";
+      if ([61, 63, 65, 66, 67, 80, 81, 82].includes(n)) return "Rain";
+      if ([71, 73, 75, 77, 85, 86].includes(n)) return "Snow";
+      if ([95, 96, 99].includes(n)) return "Thunderstorm";
+      return "Current conditions";
+    };
+
+    const fromScalarWeather = (latest: unknown) => {
+      if (!latest || typeof latest !== "object") return null;
+      const rec = latest as Record<string, unknown>;
+      const code = rec.weather_code;
+      const temp = rec.temperature_2m;
+      const rain = rec.precipitation_probability;
+      const wind = rec.wind_speed_10m;
+      const condition = weatherCodeLabel(code);
+      return {
+        summary: condition,
+        condition,
+        temp: typeof temp === "number" ? `${Math.round(temp)}°C` : null,
+        rain: typeof rain === "number" ? `Rain chance ${Math.round(rain)}%` : null,
+        wind: typeof wind === "number" ? `Wind ${Math.round(wind)} km/h` : null,
+      };
+    };
+
+    const proposalLines = bridge?.proposal?.tool_trace_summary ?? [];
+    const latestProposeEventLines = [...(bridge?.events ?? [])]
+      .filter((e) => e.kind === "agent_propose")
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .map((e) => {
+        if (!e.payload || typeof e.payload !== "object") return [];
+        const trace = (e.payload as Record<string, unknown>).tool_trace_summary;
+        return Array.isArray(trace) ? trace.filter((x): x is string => typeof x === "string") : [];
+      })
+      .find((arr) => arr.length > 0) ?? [];
+
+    const lines = proposalLines.length ? proposalLines : latestProposeEventLines;
+    const originLine = lines.find((x) => x.startsWith("weather_origin:"));
+    const destinationLine = lines.find((x) => x.startsWith("weather_destination:"));
+    const traceOrigin = parseSummaryLine(originLine);
+    const traceDestination = parseSummaryLine(destinationLine);
+    if (traceOrigin || traceDestination) {
+      return { origin: traceOrigin, destination: traceDestination, source: "agent_run" as const };
+    }
+
+    const latestWeatherEvent = [...(bridge?.events ?? [])]
+      .filter((e) => e.kind === "monitor_scan" || e.kind === "monitor_alert")
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .find((e) => {
+        const payload = e.payload as Record<string, unknown>;
+        return payload?.weather && typeof payload.weather === "object";
+      });
+    const weatherPayload =
+      latestWeatherEvent && typeof latestWeatherEvent.payload === "object"
+        ? ((latestWeatherEvent.payload as Record<string, unknown>).weather as Record<string, unknown> | undefined)
+        : undefined;
+
+    const originLatest = weatherPayload?.origin_latest ?? weatherPayload?.latest;
+    const destinationLatest = weatherPayload?.destination_latest ?? weatherPayload?.latest;
+    const fallbackOrigin = fromScalarWeather(originLatest);
+    const fallbackDestination = fromScalarWeather(destinationLatest);
+    return {
+      origin: fallbackOrigin,
+      destination: fallbackDestination,
+      source: (fallbackOrigin || fallbackDestination ? "monitor" : null) as "monitor" | null,
+    };
+  }, [bridge?.proposal?.tool_trace_summary, bridge?.events]);
+
+  const offerDateShift = useMemo(() => {
+    const raw = bridge?.proposal?.search_meta;
+    if (!raw || typeof raw !== "object") return null;
+    const rec = raw as Record<string, unknown>;
+    const shifted = rec.date_shifted === true;
+    const requested = typeof rec.requested_departure_date === "string" ? rec.requested_departure_date : null;
+    const selected = typeof rec.selected_departure_date === "string" ? rec.selected_departure_date : null;
+    if (!shifted || !requested || !selected || requested === selected) return null;
+    return { requested, selected };
+  }, [bridge?.proposal?.search_meta]);
 
   const showSeparateRebookingCard =
     !isApiReady ||
@@ -519,6 +666,10 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     lastProposalToastIdRef.current = null;
   }, [bridge?.tripId]);
 
+  useEffect(() => {
+    setAckDisruptionUncertainty(false);
+  }, [bridge?.tripId, bridge?.proposal?.proposal_id]);
+
   const lastProposeErrToastRef = useRef<string | null>(null);
   useEffect(() => {
     if (!bridge?.proposeError) {
@@ -595,7 +746,9 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
   async function confirmOpt(id: string, name: string) {
     if (isApiReady && bridge) {
       const proposalIdBefore = bridge.proposal?.proposal_id;
-      const res = await bridge.runConfirm(id);
+      const res = await bridge.runConfirm(id, {
+        acknowledgeDisruptionUncertainty: ackDisruptionUncertainty,
+      });
       if (!res) return;
       if (!res.applied) {
         pushToast(
@@ -656,6 +809,57 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
     } else {
       addLog("g", <><span className="font-medium text-[color:var(--primary)]">Demo claim filed.</span> Illustration only.</>);
       pushToast(<IndianRupee aria-hidden />, "Demo claim", "Illustration only — not a real filing.", "money");
+    }
+  }
+
+  async function downloadItineraryPdf() {
+    if (!isApiReady || !bridge?.detail) {
+      pushToast(<AlertTriangle className="h-4 w-4" aria-hidden />, "Unavailable", "Load a live trip before exporting.");
+      return;
+    }
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const trip = bridge.detail.trip;
+      const legs = [...bridge.detail.legs].sort((a, b) => a.segment_order - b.segment_order);
+      const title = trip.title?.trim() || "Trip itinerary";
+      let y = 52;
+      const lh = 18;
+
+      const line = (text: string, size = 11, bold = false) => {
+        doc.setFont("helvetica", bold ? "bold" : "normal");
+        doc.setFontSize(size);
+        doc.text(text, 42, y);
+        y += lh;
+      };
+
+      line("ReRoute.AI Itinerary", 16, true);
+      y += 6;
+      line(`Trip: ${title}`, 12, true);
+      line(`Trip ID: ${trip.id}`);
+      line(`Revision: ${trip.itinerary_revision}`);
+      line(`Exported: ${new Date().toLocaleString()}`);
+      y += 8;
+      line("Flight segments", 12, true);
+      for (const leg of legs) {
+        const segment = `${leg.segment_order + 1}. ${leg.origin_code} -> ${leg.destination_code}`;
+        const meta = `${leg.flight_number ?? leg.mode}${leg.travel_date ? ` · ${leg.travel_date}` : ""}`;
+        line(segment);
+        line(`   ${meta}`);
+      }
+      if (bridge.proposal?.ranked_options?.length) {
+        y += 8;
+        line("Latest ranked options", 12, true);
+        bridge.proposal.ranked_options.slice(0, 3).forEach((opt, idx) => {
+          line(`${idx + 1}. ${opt.summary}`);
+        });
+      }
+
+      const safe = title.replace(/[^a-z0-9-_]+/gi, "_");
+      doc.save(`reroute_itinerary_${safe}.pdf`);
+      pushToast(<Check className="h-4 w-4" aria-hidden />, "PDF downloaded", "Itinerary exported successfully.");
+    } catch {
+      pushToast(<AlertTriangle className="h-4 w-4" aria-hidden />, "Export failed", "Could not generate itinerary PDF.");
     }
   }
 
@@ -852,36 +1056,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
             ) : null}
 
-            {bannerVisible && isApiReady && bridge && apiBanner ? (
-              <div className="mb-6 flex flex-col gap-4 rounded-xl border border-amber-500/25 bg-amber-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-[color:var(--warn)]" aria-hidden>
-                    <AlertTriangle className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-zinc-100">{apiBanner.title}</div>
-                    <div className="mt-1 text-xs leading-relaxed text-zinc-400">{apiBanner.sub}</div>
-                  </div>
-                </div>
-                <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
-                  <button
-                    type="button"
-                    className="rounded-lg border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
-                    onClick={() => setBannerVisible(false)}
-                  >
-                    Dismiss
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 rounded-lg bg-amber-500/90-[#451a03] hover:bg-amber-400"
-                    onClick={scrollToOpts}
-                  >
-                    View options
-                    <ChevronRight size={14} aria-hidden />
-                  </button>
-                </div>
-              </div>
-            ) : null}
+            
 
             <div className="mb-8 flex flex-col-reverse gap-6 border-b border-zinc-800 pb-8 lg:flex-col">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -1015,12 +1190,11 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                   </>
                 ) : bridge ? (
                   <>
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--warn)]">
-                      Phase: {bridge.proposal?.phase ?? "idle"}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
-                      Trip loaded
-                    </span>
+                    {bridge.proposal?.requires_user_review ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-red-500/35 bg-red-500/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--danger)]">
+                        Manual review required
+                      </span>
+                    ) : null}
                     {bridge.proposal?.ranked_options?.length ? (
                       <span className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--primary-soft)] bg-[color:var(--primary-soft)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--primary)]">
                         {bridge.proposal.ranked_options.length} options
@@ -1340,26 +1514,10 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                       {bridge.proposing ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden /> : null}
                       Run agent
                     </button>
-                    <button
-                      type="button"
-                      className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-xs font-medium text-zinc-200 transition hover:bg-zinc-800 disabled:opacity-50"
-                      disabled={bridge.proposing || bridge.confirming || !bridge.tripId}
-                      onClick={() => void bridge.runPropose("cancel")}
-                    >
-                      Simulate cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-2 text-xs font-medium text-zinc-200 transition hover:bg-zinc-800 disabled:opacity-50"
-                      disabled={bridge.proposing || bridge.confirming || !bridge.tripId}
-                      onClick={() => void bridge.runPropose("delay")}
-                    >
-                      Simulate delay
-                    </button>
                   </div>
                   <p className="mt-3 text-[11px] leading-relaxed text-zinc-600">
-                    <span className="font-semibold text-zinc-500">Sandbox:</span> simulations affect status/cascade copy; offer lists often match live search.
-                    Safe to retry — only this trip&apos;s proposal changes.
+                    The agent uses the latest flight status and weather signals for this itinerary and then ranks
+                    available options. Safe to retry — only this trip&apos;s proposal changes.
                   </p>
                 </div>
               ) : null}
@@ -1577,6 +1735,25 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     {bridge.confirmError ? (
                       <p className="border-b border-red-500/20 bg-red-500/5 px-4 py-2 text-sm text-[color:var(--danger)]">{bridge.confirmError}</p>
                     ) : null}
+                    {bridge.proposal?.requires_user_review ? (
+                      <div className="border-b border-red-500/20 bg-red-500/5 px-4 py-3">
+                        <p className="text-sm text-zinc-200">
+                          {bridge.proposal.disruption_summary ?? "Live disruption status is uncertain."}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-400">
+                          Confirm only after checking airline/app alerts.
+                        </p>
+                        <label className="mt-2 inline-flex items-center gap-2 text-xs text-zinc-300">
+                          <input
+                            type="checkbox"
+                            checked={ackDisruptionUncertainty}
+                            onChange={(e) => setAckDisruptionUncertainty(e.target.checked)}
+                            className="h-3.5 w-3.5 rounded border-zinc-600 bg-zinc-900 text-[color:var(--primary)] focus:ring-[color:var(--primary)]"
+                          />
+                          I verified disruption details manually
+                        </label>
+                      </div>
+                    ) : null}
                     <div className="flex flex-wrap gap-2 border-b border-zinc-800/80 px-4 py-3">
                       <button
                         type="button"
@@ -1592,27 +1769,10 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         {bridge.proposing ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden /> : null}
                         {activeStep === "options" && hasRankedOptions ? "Re-run agent" : "Run agent"}
                       </button>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
-                        disabled={bridge.proposing || bridge.confirming || !bridge.tripId}
-                        onClick={() => void bridge.runPropose("cancel")}
-                      >
-                        Simulate cancel
-                      </button>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
-                        disabled={bridge.proposing || bridge.confirming || !bridge.tripId}
-                        onClick={() => void bridge.runPropose("delay")}
-                      >
-                        Simulate delay
-                      </button>
                     </div>
                     <p className="border-b border-zinc-800/80 px-4 pb-3 text-[11px] leading-relaxed text-zinc-600">
-                      <span className="font-medium text-zinc-500">Training mode:</span> cancel/delay simulations change disruption classification and cascade
-                      text; the same fare search may return the same top offers. Sandbox proposal is for{" "}
-                      <strong className="text-zinc-400">this trip only</strong> — refresh if the API state feels stuck.
+                      Proposal results are computed from current trip context and live provider responses. If availability
+                      shifts between propose and confirm, run the agent again for fresh options.
                     </p>
                     {bridge.proposing && !bridge.proposal?.ranked_options?.length ? (
                       <div className="space-y-2 p-4" aria-busy="true" aria-label="Agent ranking options">
@@ -1624,6 +1784,12 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         <div className="h-14 animate-pulse rounded-lg bg-zinc-800/50 transition-opacity" />
                         <div className="h-14 animate-pulse rounded-lg bg-zinc-800/50 transition-opacity [animation-delay:75ms]" />
                         <div className="h-14 animate-pulse rounded-lg bg-zinc-800/50 transition-opacity [animation-delay:150ms]" />
+                      </div>
+                    ) : null}
+                    {offerDateShift ? (
+                      <div className="mx-4 mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                        No same-day fare was available; options shown are for next available date{" "}
+                        <span className="font-semibold">{offerDateShift.selected}</span> (requested {offerDateShift.requested}).
                       </div>
                     ) : null}
                     {bridge.proposal?.ranked_options?.length ? (
@@ -1682,7 +1848,11 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                                     ? "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]"
                                     : "border border-zinc-700 font-medium text-zinc-300 hover:bg-zinc-800",
                                 )}
-                                disabled={bridge.confirming || !bridge.proposal}
+                                disabled={
+                                  bridge.confirming ||
+                                  !bridge.proposal ||
+                                  (bridge.proposal.requires_user_review && !ackDisruptionUncertainty)
+                                }
                                 onClick={() => void confirmOpt(opt.option_id, d.optionTitle)}
                               >
                                 {isSel ? (
@@ -1708,8 +1878,8 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                         <div className="rounded-xl border border-dashed border-zinc-700/80 bg-zinc-950/30 p-5 text-center transition-colors duration-200 sm:text-left">
                           <p className="text-sm font-semibold text-zinc-200">No ranked options yet</p>
                           <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                            Run the agent on your live itinerary, or use{" "}
-                            <strong className="font-medium text-zinc-400">Simulate cancel / delay</strong> to generate a demo proposal for this trip.
+                            Run the agent on your live itinerary to generate ranked options and cascade context for this
+                            trip.
                           </p>
                           <ul className="mx-auto mt-4 max-w-md space-y-2 text-left text-xs text-zinc-500 sm:mx-0">
                             <li className="flex gap-2">
@@ -1939,14 +2109,14 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
               <button
                 type="button"
-                disabled={isApiReady}
+                onClick={() => void downloadItineraryPdf()}
                 className={cn(
                   "inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold",
                   isApiReady
-                    ? "cursor-not-allowed border border-zinc-700 bg-zinc-900/60 text-zinc-500"
-                    : "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]",
+                    ? "bg-[color:var(--primary)] text-white hover:bg-[color:var(--primary)]"
+                    : "cursor-not-allowed border border-zinc-700 bg-zinc-900/60 text-zinc-500",
                 )}
-                title={isApiReady ? "Sharing is not available yet for live trips." : undefined}
+                title={!isApiReady ? "Load a live trip to export." : undefined}
               >
                 Share itinerary
                 <ExternalLink size={15} aria-hidden />
@@ -2235,17 +2405,76 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--subtle)]" aria-hidden />
                     Weather context
                   </div>
+                  {weatherRunSummary.source ? (
+                    <span className="rounded-md border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--subtle)]">
+                      {weatherRunSummary.source === "agent_run" ? "from latest agent run" : "from monitor"}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="p-4">
                   {isApiReady && citiesLine.length > 0 && citiesLine[0] !== "—" ? (
                     <div className="space-y-2">
-                      <p className="text-xs leading-relaxed text-[color:var(--muted)]">
-                        Airports on this trip: {citiesLine.join(" → ")}. Live weather cards require coordinates in your trip
-                        snapshot and are summarized during each agent run (see Activity log).
+                      <p className="inline-flex items-center gap-1.5 text-xs text-[color:var(--muted)]">
+                        <MapPin className="h-3.5 w-3.5" aria-hidden />
+                        {citiesLine.join(" → ")}
                       </p>
-                      <p className="text-[11px] text-[color:var(--subtle)]">
-                        We don&apos;t show fake temperatures here — check the agent tool trace for what was evaluated.
-                      </p>
+                      {weatherRunSummary.origin || weatherRunSummary.destination ? (
+                        <div className="grid gap-2">
+                          {weatherRunSummary.origin ? (
+                            <div className="grid gap-2">
+                              <p className="text-[11px] uppercase tracking-wide text-[color:var(--subtle)]">Origin</p>
+                              <div className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-sm font-medium text-[color:var(--fg)]">
+                                <Cloud className="h-4 w-4 text-[color:var(--primary)]" aria-hidden />
+                                {weatherRunSummary.origin.condition}
+                              </div>
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                <div className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-xs text-[color:var(--muted)]">
+                                  <Thermometer className="h-4 w-4 text-[color:var(--warn)]" aria-hidden />
+                                  {weatherRunSummary.origin.temp ?? "Temp —"}
+                                </div>
+                                <div className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-xs text-[color:var(--muted)]">
+                                  <Droplets className="h-4 w-4 text-sky-400" aria-hidden />
+                                  {weatherRunSummary.origin.rain ?? "Rain chance —"}
+                                </div>
+                                <div className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-xs text-[color:var(--muted)]">
+                                  <Wind className="h-4 w-4 text-[color:var(--primary)]" aria-hidden />
+                                  {weatherRunSummary.origin.wind ?? "Wind —"}
+                                </div>
+                              </div>
+                            </div>
+                          ) : null}
+                          {weatherRunSummary.destination ? (
+                            <div className="grid gap-2">
+                              <p className="text-[11px] uppercase tracking-wide text-[color:var(--subtle)]">Destination</p>
+                              <div className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-sm font-medium text-[color:var(--fg)]">
+                                <Cloud className="h-4 w-4 text-[color:var(--primary)]" aria-hidden />
+                                {weatherRunSummary.destination.condition}
+                              </div>
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                <div className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-xs text-[color:var(--muted)]">
+                                  <Thermometer className="h-4 w-4 text-[color:var(--warn)]" aria-hidden />
+                                  {weatherRunSummary.destination.temp ?? "Temp —"}
+                                </div>
+                                <div className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-xs text-[color:var(--muted)]">
+                                  <Droplets className="h-4 w-4 text-sky-400" aria-hidden />
+                                  {weatherRunSummary.destination.rain ?? "Rain chance —"}
+                                </div>
+                                <div className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-xs text-[color:var(--muted)]">
+                                  <Wind className="h-4 w-4 text-[color:var(--primary)]" aria-hidden />
+                                  {weatherRunSummary.destination.wind ?? "Wind —"}
+                                </div>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className="grid gap-2">
+                          <div className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-3 py-2 text-sm font-medium text-[color:var(--fg)]">
+                            <Cloud className="h-4 w-4 text-[color:var(--primary)]" aria-hidden />
+                            Weather details unavailable
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className="text-xs leading-relaxed text-[color:var(--subtle)]">

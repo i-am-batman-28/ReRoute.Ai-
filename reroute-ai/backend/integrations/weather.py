@@ -13,6 +13,7 @@ async def fetch_openmeteo_hourly(*, latitude: float, longitude: float) -> dict:
     - precipitation_probability
     - weather_code
     - wind_speed_10m
+    - temperature_2m
     """
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
@@ -24,6 +25,7 @@ async def fetch_openmeteo_hourly(*, latitude: float, longitude: float) -> dict:
                 "precipitation_probability",
                 "weather_code",
                 "wind_speed_10m",
+                "temperature_2m",
             ]
         ),
     }

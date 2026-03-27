@@ -248,8 +248,8 @@ export default function HomePage() {
                     className="absolute inset-x-0 bottom-0 h-20"
                     style={{ background: "linear-gradient(to top, var(--bg), transparent)" }}
                     aria-hidden
-                  />
-                </div>
+              />
+            </div>
               </div>
             </article>
 
@@ -277,8 +277,8 @@ export default function HomePage() {
                   fill
                   className="object-cover object-center"
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                />
-              </div>
+              />
+            </div>
             </article>
 
             {/* Feature bottom-right */}

@@ -163,15 +163,6 @@ export default function HomePage() {
               Create account
             </Link>
           </div>
-          <p className="mt-6 text-center text-sm" style={{ color: "var(--subtle)" }}>
-            <a href="#pricing" style={{ color: "var(--primary)" }} className="hover:opacity-80 transition">
-              View pricing
-            </a>
-            <span style={{ color: "var(--stroke-strong)" }}> · </span>
-            <a href="#features" style={{ color: "var(--primary)" }} className="hover:opacity-80 transition">
-              Explore features
-            </a>
-          </p>
         </div>
       </section>
 

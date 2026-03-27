@@ -52,6 +52,10 @@ async def _migrate_sqlite_users_auth(conn) -> None:
         await conn.execute(text("ALTER TABLE users ADD COLUMN google_sub VARCHAR(255)"))
     if "avatar_url" not in col_names:
         await conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(512)"))
+    if "auto_rebook" not in col_names:
+        await conn.execute(text("ALTER TABLE users ADD COLUMN auto_rebook BOOLEAN DEFAULT 0"))
+    if "phone_number" not in col_names:
+        await conn.execute(text("ALTER TABLE users ADD COLUMN phone_number VARCHAR(20)"))
 
     r2 = await conn.execute(text("PRAGMA table_info(users)"))
     rows2 = r2.fetchall()

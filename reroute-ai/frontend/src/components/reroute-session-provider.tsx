@@ -21,6 +21,8 @@ function coerceUser(raw: unknown): UserPublic {
     created_at: String(u.created_at ?? ""),
     avatar_url: u.avatar_url == null || u.avatar_url === undefined ? null : String(u.avatar_url),
     google_account_linked: Boolean(u.google_account_linked),
+    auto_rebook: Boolean(u.auto_rebook),
+    phone_number: u.phone_number == null ? null : String(u.phone_number),
   };
 }
 

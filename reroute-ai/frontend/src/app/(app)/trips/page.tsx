@@ -84,7 +84,7 @@ export default function TripsPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+      <div className="w-full px-6 py-16 text-center">
         <p className="text-sm text-red-400">{error}</p>
         <button
           type="button"
@@ -98,7 +98,7 @@ export default function TripsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div className="w-full px-6 py-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--fg)]">Trips</h1>

@@ -45,7 +45,7 @@ export default function DashboardOverviewPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+      <div className="w-full px-6 py-16 text-center">
         <p className="text-sm text-red-400">{error}</p>
         <button
           type="button"
@@ -62,7 +62,7 @@ export default function DashboardOverviewPage() {
   const pending = monitor?.total_pending_proposals ?? 0;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <div className="w-full px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--fg)]">Overview</h1>

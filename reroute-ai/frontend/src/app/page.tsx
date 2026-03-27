@@ -76,8 +76,8 @@ export default function HomePage() {
               <a href="#pricing" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
                 Pricing
               </a>
-              <Link href="/login" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
-                Sign in
+              <Link href="/contact" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
+                Contact Us
               </Link>
             </nav>
 
@@ -381,8 +381,8 @@ export default function HomePage() {
             <Link href="/signup" className="hover:opacity-100 transition" style={{ opacity: 0.7 }}>
               Sign up
             </Link>
-            <Link href="/login" className="hover:opacity-100 transition" style={{ opacity: 0.7 }}>
-              Sign in
+            <Link href="/contact" className="hover:opacity-100 transition" style={{ opacity: 0.7 }}>
+              Contact Us
             </Link>
           </div>
         </div>

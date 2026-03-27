@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import httpx
 
 from config import get_settings
@@ -37,6 +39,41 @@ def _simulate(simulate_disruption: str | None) -> dict:
     return {"status": "unknown", "delay_minutes": None, "source": "simulation"}
 
 
+def _parse_iso_dt(value: object) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    txt = value.strip().replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(txt)
+    except Exception:
+        return None
+
+
+def _derive_delay_minutes(item: dict) -> int | None:
+    # Prefer API explicit delay when present.
+    raw_delay = item.get("delay") or item.get("delay_minutes")
+    if raw_delay is not None:
+        try:
+            return max(0, int(raw_delay))
+        except Exception:
+            pass
+    dep = item.get("departure") if isinstance(item.get("departure"), dict) else {}
+    arr = item.get("arrival") if isinstance(item.get("arrival"), dict) else {}
+    # Try departure scheduled vs estimated/actual first.
+    dep_sched = _parse_iso_dt(dep.get("scheduled"))
+    dep_est = _parse_iso_dt(dep.get("estimated")) or _parse_iso_dt(dep.get("actual"))
+    if dep_sched and dep_est:
+        mins = int((dep_est - dep_sched).total_seconds() // 60)
+        return max(0, mins)
+    # Fallback arrival scheduled vs estimated/actual.
+    arr_sched = _parse_iso_dt(arr.get("scheduled"))
+    arr_est = _parse_iso_dt(arr.get("estimated")) or _parse_iso_dt(arr.get("actual"))
+    if arr_sched and arr_est:
+        mins = int((arr_est - arr_sched).total_seconds() // 60)
+        return max(0, mins)
+    return None
+
+
 async def get_flight_status_aviationstack(
     *,
     flight_number: str,
@@ -62,13 +99,21 @@ async def get_flight_status_aviationstack(
         "date": date,
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=integration_timeout()) as client:
-            r = await client.get(AVIATIONSTACK_URL, params=params)
-            r.raise_for_status()
-            payload = r.json()
-    except Exception:
-        return {"status": "unknown", "delay_minutes": None, "source": "error"}
+    payload: dict = {}
+    err_source: str | None = None
+    for _attempt in range(2):
+        try:
+            async with httpx.AsyncClient(timeout=integration_timeout()) as client:
+                r = await client.get(AVIATIONSTACK_URL, params=params)
+                r.raise_for_status()
+                payload = r.json()
+                err_source = None
+                break
+        except Exception as e:
+            err_source = f"error:{type(e).__name__}"
+            continue
+    if err_source:
+        return {"status": "unknown", "delay_minutes": None, "source": err_source}
 
     # Aviationstack responses contain `data` list under v1.
     data = payload.get("data") or []
@@ -80,14 +125,13 @@ async def get_flight_status_aviationstack(
     status_text = (
         str(item.get("flight_status") or item.get("status") or "").lower().strip()
     )
-    # delay_minutes is not guaranteed; delay can be derived if actual/estimated times exist.
-    delay_minutes = item.get("delay") or item.get("delay_minutes")
+    delay_minutes = _derive_delay_minutes(item)
 
     if "cancel" in status_text:
         return {"status": "cancelled", "delay_minutes": 0, "source": "aviationstack"}
     if "divert" in status_text:
         return {"status": "diverted", "delay_minutes": delay_minutes, "source": "aviationstack"}
-    if delay_minutes is not None:
+    if delay_minutes is not None and int(delay_minutes) >= 15:
         return {"status": "delayed", "delay_minutes": int(delay_minutes), "source": "aviationstack"}
 
     return {"status": "unknown", "delay_minutes": None, "source": "aviationstack"}

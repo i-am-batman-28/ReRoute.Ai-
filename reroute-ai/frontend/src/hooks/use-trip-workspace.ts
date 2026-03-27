@@ -159,15 +159,17 @@ export function useTripWorkspace(tripId: string) {
   );
 
   const runConfirm = useCallback(
-    async (selectedOptionId: string): Promise<AgentConfirmResponse | null> => {
+    async (selectedOptionId: string, options?: { acknowledgeDisruptionUncertainty?: boolean }): Promise<AgentConfirmResponse | null> => {
       const prop = proposal;
       if (!user || !prop) return null;
       setConfirming(true);
       setConfirmError(null);
       setProposeError(null);
       try {
-        const res = await apiAgentConfirm(prop.proposal_id, selectedOptionId);
-        setProposal(null);
+        const res = await apiAgentConfirm(prop.proposal_id, selectedOptionId, options);
+        if (res.applied) {
+          setProposal(null);
+        }
         await loadTripData();
         return res;
       } catch (e) {

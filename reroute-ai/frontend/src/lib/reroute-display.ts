@@ -19,7 +19,7 @@ function humanizeDisruptionType(raw: string): string {
   if (t === "delayed") return "Your flight is delayed — we ranked alternatives below.";
   if (t === "cancelled") return "Your flight was cancelled — see rebooking choices below.";
   if (t === "diverted") return "Your flight was diverted — review options to get back on track.";
-  if (t === "unknown") return "Live airline status wasn’t available — estimates were used to rank options.";
+  if (t === "unknown") return "Live airline status wasn’t available — check the carrier app and refresh.";
   return raw.replace(/_/g, " ");
 }
 
@@ -35,28 +35,39 @@ export type RankedOptionDisplay = {
 /** Structured labels for cards — avoids one cluttered `summary` line. */
 export function getRankedOptionDisplay(opt: RankedOptionDTO, index: number): RankedOptionDisplay {
   const leg = opt.legs?.[0];
+  const lastLeg = opt.legs?.length ? opt.legs[opt.legs.length - 1] : undefined;
   const from = typeof leg?.from === "string" ? leg.from : undefined;
-  const to = typeof leg?.to === "string" ? leg.to : undefined;
-  const arrivalFromLeg = typeof leg?.arrival_time === "string" ? leg.arrival_time : undefined;
+  const to = typeof lastLeg?.to === "string" ? lastLeg.to : typeof leg?.to === "string" ? leg.to : undefined;
+  const arrivalFromLeg =
+    typeof lastLeg?.arrival_time === "string" ? lastLeg.arrival_time : typeof leg?.arrival_time === "string" ? leg.arrival_time : undefined;
 
   const summary = opt.summary;
   const arriveMatch = summary.match(/arrive=([^\s]+)/);
   const costMatch = summary.match(/cost=([A-Z]{3})\s*([\d.]+)/i);
 
+  const chainFromLegs = (opt.legs ?? [])
+    .map((x) => (typeof x?.from === "string" ? x.from : null))
+    .filter(Boolean) as string[];
+  const tailTo = typeof lastLeg?.to === "string" ? lastLeg.to : null;
+  const routeChain = chainFromLegs.length && tailTo ? [...chainFromLegs, tailTo].join(" → ") : null;
   const route =
-    from && to
+    routeChain ??
+    (from && to
       ? `${from} → ${to}`
       : summary
           .replace(/^Option\s+\d+:\s*/i, "")
           .split(/\s+arrive=/)[0]
-          ?.trim() || `Option ${index + 1}`;
+          ?.trim() || `Option ${index + 1}`);
 
   const arrivalIso = arriveMatch?.[1] ?? arrivalFromLeg;
   const arrivalLabel = formatFriendlyDateTime(arrivalIso);
 
   const priceLabel = costMatch ? `${costMatch[1]} ${costMatch[2]}` : null;
 
-  const modalityLabel = (opt.modality ?? "flight").replace(/_/g, " ");
+  const baseModality = (opt.modality ?? "flight").replace(/_/g, " ");
+  const stopCount = Math.max(0, (opt.legs?.length ?? 1) - 1);
+  const stopsLabel = stopCount === 0 ? "non-stop" : `${stopCount} stop${stopCount === 1 ? "" : "s"}`;
+  const modalityLabel = `${baseModality} · ${stopsLabel}`;
 
   const id = opt.option_id;
   const bookingRefShort =
@@ -243,23 +254,42 @@ export function humanizeToolTraceLine(line: string): string {
     const src = line.match(/source=([^)]+)\)/);
     const status = m?.[1] ?? "unknown";
     if (status === "unknown" || line.includes("error")) {
-      return "Checked flight status — airline feed didn’t return live data, so we used safe defaults.";
+      return "Checked flight status — airline feed didn’t return live data yet.";
     }
     return `Checked flight status (${status}${src ? `, ${src[1]}` : ""}).`;
   }
-  if (line.startsWith("weather_latest:")) {
-    if (line.includes("skipped") || line.includes("missing_coords")) {
-      return "Skipped live weather (add destination coordinates to your trip for richer checks).";
-    }
-    return "Checked weather at your destination.";
+  if (line.startsWith("weather_origin:")) {
+    const s = line.replace(/^weather_origin:\s*/i, "").trim();
+    return s === "unavailable" ? "Origin weather unavailable." : `Origin weather: ${s}.`;
+  }
+  if (line.startsWith("weather_destination:")) {
+    const s = line.replace(/^weather_destination:\s*/i, "").trim();
+    return s === "unavailable" ? "Destination weather unavailable." : `Destination weather: ${s}.`;
   }
   if (line.startsWith("duffel_offers_count:")) {
     const n = line.match(/duffel_offers_count:\s*(\d+)/);
     const count = n?.[1] ?? "0";
     return `Searched airline offers — ${count} fare(s) available to compare.`;
   }
-  if (line.includes("fallback_to_delayed")) {
-    return "Estimated delay timing to rank options when live status was unavailable.";
+  if (line.startsWith("offer_date_shift:")) {
+    const requested = line.match(/requested=([0-9-]+)/)?.[1];
+    const selected = line.match(/selected=([0-9-]+)/)?.[1];
+    if (requested && selected && requested !== selected) {
+      return `No fare on ${requested}; showed next available date ${selected}.`;
+    }
+    return "Offer date fallback was evaluated.";
+  }
+  if (line.startsWith("delay_minutes:")) {
+    const m = line.match(/delay_minutes:\s*([^\s]+)/);
+    const raw = m?.[1] ?? "unknown";
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return "Delay duration is not available from the feed.";
+    const minutes = Math.max(0, Math.trunc(n));
+    const h = Math.floor(minutes / 60);
+    const mm = minutes % 60;
+    if (h > 0 && mm > 0) return `Delay recorded: ${h}h ${mm}m.`;
+    if (h > 0) return `Delay recorded: ${h}h.`;
+    return `Delay recorded: ${mm}m.`;
   }
   return line;
 }

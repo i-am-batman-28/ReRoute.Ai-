@@ -66,11 +66,14 @@ export type RankedOptionDTO = {
 export type AgentProposeResponse = {
   proposal_id: string;
   phase: string;
+  requires_user_review: boolean;
+  disruption_summary: string | null;
   ranked_options: RankedOptionDTO[];
   tool_trace_summary: string[];
   cascade_preview: Record<string, unknown> | null;
   compensation_draft: Record<string, unknown> | null;
   notification_status: Record<string, unknown> | null;
+  search_meta?: Record<string, unknown> | null;
 };
 
 export type AgentConfirmResponse = {

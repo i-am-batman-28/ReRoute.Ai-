@@ -20,9 +20,7 @@ from fastapi import HTTPException
 from fastapi import status as http_status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from agent.tools import fetch_flight_status, fetch_weather_signals, search_alternatives
 from config import get_settings
-from integrations.duffel_client import create_order
 from integrations.resend_client import send_email_html
 from model.proposal_model import RebookingProposal
 from schema.agent_schemas import (
@@ -33,6 +31,7 @@ from schema.agent_schemas import (
     AgentProposeResponse,
     RankedOptionDTO,
 )
+from service.agent_graph_service import run_confirm_graph, run_propose_graph
 from service import proposal_service, trip_service
 from service.itinerary_service import apply_rebooking_plan
 
@@ -193,191 +192,30 @@ async def propose_for_trip(
             detail="Trip snapshot legs.primary_flight is missing required fields",
         )
 
-    # 1) OBSERVE
-    try:
-        flight_status = await fetch_flight_status(
-            flight_number=primary["flight_number"],
-            date=primary["date"],
-            simulate_disruption=simulate_disruption,
-        )
-    except Exception as e:
-        flight_status = {"status": "unknown", "delay_minutes": None, "source": f"error:{type(e).__name__}"}
-
-    wx = legs_block.get("weather") if isinstance(legs_block.get("weather"), dict) else {}
-    dest_lat = wx.get("destination_lat")
-    dest_lon = wx.get("destination_lon")
-    if dest_lat is not None and dest_lon is not None:
-        try:
-            weather = await fetch_weather_signals(latitude=float(dest_lat), longitude=float(dest_lon))
-        except Exception:
-            weather = {"source": "error", "latest": {}}
-    else:
-        weather = {"source": "skipped_missing_coords", "latest": {}}
-
-    # 2) SEARCH alternatives (tools → JSON truth)
-    try:
-        search = await search_alternatives(trip_context=trip_context, simulate_disruption=simulate_disruption)
-    except Exception:
-        search = {"source": "duffel_error", "orq": {"data": {"offers": [], "passengers": []}}}
-    orq = (search.get("orq") or {}).get("data") or {}
-    offers = orq.get("offers") or []
-    duffel_passengers = orq.get("passengers") or []
-
-    tool_trace_summary: list[str] = [
-        f"flight_status: {flight_status.get('status')} (source={flight_status.get('source')})",
-        f"weather_latest: {weather.get('latest', {}).get('weather_code', [])} (source={weather.get('source')})",
-        f"duffel_offers_count: {len(offers) if isinstance(offers, list) else 0} (source=duffel)",
-    ]
-
-    # 3) Classification
-    disruption_status = flight_status.get("status")
-    delay_minutes = flight_status.get("delay_minutes")
-    if disruption_status == "unknown" or delay_minutes is None:
-        # Deterministic fallback for demo: treat as delay when providers can't classify.
-        disruption_status = "delayed"
-        delay_minutes = 120
-        tool_trace_summary.append("flight_status: fallback_to_delayed(delay_minutes=120)")
-
-    disruption_type = str(disruption_status)
-
-    # 4) Ranking + top-3 options
-    booking_mode = "live"
-    options: list[RankedOptionDTO] = []
-    options_by_offer_id: dict[str, dict] = {}
-
-    def _to_float(v: object) -> float | None:
-        try:
-            return float(v)  # type: ignore[arg-type]
-        except Exception:
-            return None
-
-    def _extract_arrival_time(offer: dict) -> str | None:
-        # Offer structure is provider-specific; we attempt to find arriving_at.
-        slices = offer.get("slices") or []
-        for s in slices:
-            segments = (s.get("segments") or []) if isinstance(s, dict) else []
-            for seg in segments:
-                arriving_at = seg.get("arriving_at")
-                if arriving_at:
-                    return str(arriving_at)
-        return None
-
-    if not offers:
-        # Mock fallback so the demo never fails.
-        booking_mode = "mock"
-        mock_offers = [
-            {"id": "mock_offer_1", "total_amount": "120.00", "total_currency": "USD", "slices": []},
-            {"id": "mock_offer_2", "total_amount": "145.00", "total_currency": "USD", "slices": []},
-            {"id": "mock_offer_3", "total_amount": "160.00", "total_currency": "USD", "slices": []},
-        ]
-        offers = mock_offers
-
-    def _score_offer(offer: dict) -> float:
-        # Deterministic scoring:
-        # - Prefer lower cost
-        # - Prefer earlier arrival time (string sort isn't robust; we keep it simple)
-        amount = _to_float(offer.get("total_amount"))
-        amount_score = amount if amount is not None else 999999
-        arrival = _extract_arrival_time(offer)
-        # If we have an arrival time string, use it as a weak proxy
-        arrival_score = len(arrival) if arrival else 1000
-        return float(amount_score) + float(arrival_score) * 0.01
-
-    sorted_offers = sorted(offers, key=_score_offer)[:3]
-
-    for idx, offer in enumerate(sorted_offers, start=1):
-        offer_id = str(offer.get("id") or f"offer_{idx}")
-        total_amount = str(offer.get("total_amount") or "0")
-        total_currency = str(offer.get("total_currency") or "USD")
-        arrival_time = _extract_arrival_time(offer)
-        modality = "flight"
-
-        summary = (
-            f"Option {idx}: {primary['origin']}→{primary['destination']} "
-            f"arrive={arrival_time or 'TBD'} cost={total_currency} {total_amount}"
-        )
-
-        option_payload = {
-            "duffel_offer_id": offer_id,
-            "payments": [{"type": "balance", "currency": total_currency, "amount": total_amount}],
-            "arrival_time": arrival_time,
-        }
-        options_by_offer_id[offer_id] = option_payload
-
-        options.append(
-            RankedOptionDTO(
-                option_id=offer_id,
-                score=float(idx),  # simple ordinal score for UI
-                summary=summary,
-                legs=[
-                    {
-                        "from": primary["origin"],
-                        "to": primary["destination"],
-                        "arrival_time": arrival_time,
-                    }
-                ],
-                modality=modality,
-            )
-        )
-
-    # 5) Cascade preview (connection/hotel/meeting) — safe defaults if snapshot omits blocks
-    conn_sub = legs_block.get("connection") if isinstance(legs_block.get("connection"), dict) else {}
-    conn_buffer = int(conn_sub.get("departure_after_arrival_minutes") or 90)
-    missed_connection = (disruption_status in ("delayed", "diverted")) and int(delay_minutes) >= int(
-        conn_buffer
+    graph = await run_propose_graph(
+        trip_context=trip_context,
+        simulate_disruption=simulate_disruption,
     )
-    hotel_shift = int(delay_minutes)
-
-    meet_sub = legs_block.get("meeting") if isinstance(legs_block.get("meeting"), dict) else {}
-    meeting_scheduled = meet_sub.get("scheduled_time_utc") or "TBD"
-    meeting_message = (
-        f"Meeting likely delayed by ~{hotel_shift} minutes. "
-        f"Consider rescheduling (draft) from {meeting_scheduled}."
-        if disruption_status in ("delayed", "diverted")
-        else f"Meeting rescheduling recommended due to {disruption_type}."
+    duffel_passengers = graph.get("duffel_passengers") or []
+    tool_trace_summary = [str(x) for x in (graph.get("tool_trace_summary") or [])]
+    disruption_type = str(graph.get("disruption_type") or "unknown")
+    flight_source = str((graph.get("flight_status") or {}).get("source") or "")
+    booking_mode = str(graph.get("booking_mode") or "mock")
+    options_by_offer_id = graph.get("options_by_offer_id") or {}
+    options = [RankedOptionDTO.model_validate(o) for o in (graph.get("options") or [])]
+    cascade_preview = graph.get("cascade_preview") if isinstance(graph.get("cascade_preview"), dict) else {}
+    compensation_draft = (
+        graph.get("compensation_draft") if isinstance(graph.get("compensation_draft"), dict) else {}
     )
-    hotel_message = (
-        f"Hotel check-in adjusted: late arrival buffer ~{hotel_shift} minutes."
-        if disruption_status in ("delayed", "diverted")
-        else f"Hotel check-in adjustment recommended due to {disruption_type}."
-    )
-    cascade_preview = {
-        "disruption_type": disruption_type,
-        "missed_connection": missed_connection,
-        "hotel_update_message": hotel_message,
-        "meeting_update_message": meeting_message,
-        "what_we_changed_summary": [
-            "proposed top-3 rebooking options",
-            "computed likely cascade based on delay minutes + connection buffer",
-        ],
-    }
-
-    # 6) Compensation claim draft (safe phrasing)
-    comp_eligible = disruption_type in ("cancelled", "delayed", "diverted") and (
-        disruption_type != "delayed" or int(delay_minutes) >= 120
-    )
-    compensation_draft = {
-        "eligible": bool(comp_eligible),
-        "eligibility_basis": {
-            "rules_used": "hackathon_demo_delay_thresholds",
-            "delay_minutes": delay_minutes,
-            "disruption_type": disruption_type,
-        },
-        "claim_text_draft": (
-            "Based on eligibility criteria, you may be entitled to compensation. "
-            "Review official rules for final determination."
-        ),
-        "evidence_checklist": [
-            "flight status record",
-            "rebooking receipts",
-            "incident notes",
-            "bank details if submitting",
-        ],
-    }
+    search_meta = graph.get("search_meta") if isinstance(graph.get("search_meta"), dict) else {}
 
     # 7) Persist proposal context for confirm/apply
     # We store Duffel booking context (passengers ids + payments per offer).
     # Passenger mapping: Duffel returns passenger ids; we attach passenger details from trip_context.
+    # Only force manual review when provider responded but status is still unknown.
+    # Do not block all trips when status feed is unavailable/misconfigured.
+    requires_user_review = disruption_type == "unknown" and flight_source == "aviationstack"
+    graph_checkpoints = [dict(x) for x in (graph.get("checkpoint_events") or []) if isinstance(x, dict)]
     proposal_context = {
         "owner_user_id": user_id,
         "booking_mode": booking_mode,
@@ -386,6 +224,15 @@ async def propose_for_trip(
         "passengers_details": trip_context.get("passengers", []),
         "options_by_offer_id": options_by_offer_id,
         "disruption_type": disruption_type,
+        "disruption_source": flight_source,
+        "requires_user_review": requires_user_review,
+        "search_meta": search_meta,
+        "graph_checkpoint": {
+            "propose": {
+                "phase": "await_user_review" if requires_user_review else "await_confirm",
+                "events": graph_checkpoints,
+            }
+        },
     }
     tid = trip_context.get("trip_id")
     if not isinstance(tid, str) or not tid:
@@ -422,14 +269,27 @@ async def propose_for_trip(
         if res.get("email_queued"):
             notification_status["email_queued"] = True
 
+    disruption_summary = (
+        "Flight cancelled."
+        if disruption_type == "cancelled"
+        else "Flight delayed."
+        if disruption_type == "delayed"
+        else "Flight diverted."
+        if disruption_type == "diverted"
+        else "Live disruption status unavailable right now."
+    )
+    phase = "await_user_review" if requires_user_review else "await_confirm"
     return AgentProposeResponse(
         proposal_id=proposal_id,
-        phase="await_confirm",
+        phase=phase,
+        requires_user_review=requires_user_review,
+        disruption_summary=disruption_summary,
         ranked_options=options,
         tool_trace_summary=tool_trace_summary,
         cascade_preview=cascade_preview,
         compensation_draft=compensation_draft,
         notification_status=notification_status,
+        search_meta=search_meta,
     )
 
 
@@ -513,9 +373,28 @@ async def confirm_and_apply(
         proposal = copy.deepcopy(row.context)
         trip_context = proposal["trip_context"]
         booking_mode = proposal.get("booking_mode", "live")
+        requires_user_review = bool(proposal.get("requires_user_review"))
         options_by_offer_id = proposal.get("options_by_offer_id") or {}
-        option_ctx = options_by_offer_id.get(body.selected_option_id)
-        if not option_ctx:
+        to_email = trip_context.get("user", {}).get("email")
+        confirm_graph = await run_confirm_graph(
+            booking_mode=str(booking_mode),
+            trip_context=trip_context,
+            selected_option_id=body.selected_option_id,
+            options_by_offer_id=options_by_offer_id,
+            requires_user_review=requires_user_review,
+            acknowledged_uncertainty=body.acknowledge_disruption_uncertainty,
+            duffel_passengers=proposal.get("duffel_passengers") or [],
+            passenger_details=proposal.get("passengers_details") or [],
+        )
+        checkpoints = [dict(x) for x in (confirm_graph.get("checkpoint_events") or []) if isinstance(x, dict)]
+        ctx = copy.deepcopy(row.context or {})
+        cp = ctx.get("graph_checkpoint") if isinstance(ctx.get("graph_checkpoint"), dict) else {}
+        cp["confirm"] = {"events": checkpoints}
+        ctx["graph_checkpoint"] = cp
+        row.context = ctx
+        await session.flush()
+
+        if not confirm_graph.get("can_apply"):
             await proposal_service.release_confirm_claim(
                 session=session,
                 proposal_id=body.proposal_id,
@@ -525,56 +404,14 @@ async def confirm_and_apply(
             return AgentConfirmResponse(
                 applied=False,
                 itinerary_revision=None,
-                message="Selected option not found in proposal.",
+                message=str(confirm_graph.get("error_message") or "Could not confirm this option."),
                 duffel_order_id=None,
                 email_sent=False,
             )
 
-        to_email = trip_context.get("user", {}).get("email")
-
-        if booking_mode == "mock":
-            duffel_order_id = f"mock_order_{body.selected_option_id}"
-        else:
-            duffel_passengers = proposal.get("duffel_passengers") or []
-            passenger_details = proposal.get("passengers_details") or []
-
-            try:
-                passengers_payload = []
-                for i, duffel_p in enumerate(duffel_passengers):
-                    pid = duffel_p.get("id")
-                    base = (
-                        passenger_details[i]
-                        if i < len(passenger_details)
-                        else passenger_details[-1]
-                    )
-                    passengers_payload.append(
-                        {
-                            "id": pid,
-                            "phone_number": base.get("phone_number"),
-                            "email": base.get("email"),
-                            "born_on": base.get("born_on"),
-                            "title": base.get("title"),
-                            "gender": base.get("gender"),
-                            "family_name": base.get("family_name"),
-                            "given_name": base.get("given_name"),
-                        }
-                    )
-
-                order_payload = {
-                    "data": {
-                        "selected_offers": [body.selected_option_id],
-                        "payments": option_ctx["payments"],
-                        "passengers": passengers_payload,
-                    }
-                }
-                order_resp = await create_order(order_payload=order_payload)
-                duffel_order_id = (order_resp.get("data") or {}).get("id")
-            except Exception as e:
-                logger.exception(
-                    "Duffel order creation failed; falling back to mock.", extra={"error": str(e)}
-                )
-                duffel_order_id = f"mock_order_{body.selected_option_id}"
-
+        applied_option_id = str(confirm_graph.get("applied_option_id") or body.selected_option_id)
+        option_ctx = confirm_graph.get("option_ctx") or options_by_offer_id.get(body.selected_option_id) or {}
+        duffel_order_id = str(confirm_graph.get("duffel_order_id") or "") or None
         apply_res = await apply_rebooking_plan(trip_context=trip_context, option=option_ctx)
         arrival_raw = apply_res.get("arrival_time") or option_ctx.get("arrival_time")
         arrival_s = str(arrival_raw) if arrival_raw else None
@@ -590,7 +427,7 @@ async def confirm_and_apply(
             proposal_id=body.proposal_id,
             user_id=user_id,
             disruption_type=proposal.get("disruption_type"),
-            selected_offer_id=body.selected_option_id,
+            selected_offer_id=applied_option_id,
             duffel_order_id=duffel_order_id,
             commit=False,
         )
@@ -613,7 +450,7 @@ async def confirm_and_apply(
                 user_id=user_id,
                 trip_id=tid,
                 session=session,
-                selected_offer_id=body.selected_option_id,
+                selected_offer_id=applied_option_id,
                 duffel_order_id=duffel_order_id,
                 arrival_time=arrival_s,
                 commit=False,
@@ -631,7 +468,7 @@ async def confirm_and_apply(
                 to_name=trip_context["user"].get("full_name", "Traveler"),
                 disruption_type=proposal.get("disruption_type"),
                 order_id=duffel_order_id or "N/A",
-                option_id=body.selected_option_id,
+                option_id=applied_option_id,
             )
             res = await _dispatch_agent_email(to_email=to_email, subject=subject, html=html)
             email_sent = bool(res.get("sent"))

@@ -93,6 +93,8 @@ class Settings(BaseSettings):
 
     DUFFEL_API_KEY: str | None = None
     DUFFEL_VERSION: str = "v2"
+    # If True, confirmation never silently falls back to mock order IDs.
+    duffel_strict_booking: bool = True
 
     RESEND_API_KEY: str | None = None
     RESEND_FROM_EMAIL: str = "noreply@reroute.ai"

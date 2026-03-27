@@ -66,7 +66,7 @@ export function buildTripSnapshot(input: BuildTripSnapshotInput): Record<string,
     given_name: trim(p.givenName) || "Traveler",
     family_name: trim(p.familyName) || String(i + 1),
     gender: p.gender,
-    phone_number: trim(p.phoneNumber) || "+10000000000",
+    phone_number: trim(p.phoneNumber) || "+14155552671",
     email,
     born_on: trim(p.bornOn) || "1990-01-01",
   }));

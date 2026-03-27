@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import emailjs from "@emailjs/browser";
-import { Plane, MapPin } from "lucide-react";
-import Link from "next/link";
-import { ThemeToggle } from "@/components/theme-toggle";
 
-export default function ContactPage() {
+export function ContactSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -25,7 +22,6 @@ export default function ContactPage() {
     };
 
     try {
-      // Replace these with your actual EmailJS Service ID, Template ID, and Public Key
       await emailjs.send(
         process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "YOUR_SERVICE_ID",
         process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "YOUR_TEMPLATE_ID",
@@ -43,80 +39,25 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)", color: "var(--fg)" }}>
-      {/* Navbar */}
-      <header
-        className="relative z-20 border-b backdrop-blur-md"
-        style={{ borderColor: "var(--stroke)", background: "color-mix(in srgb, var(--bg) 60%, transparent)" }}
-      >
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:h-16 sm:px-6">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight" style={{ color: "var(--fg)" }}>
-            <span
-              className="flex h-8 w-8 items-center justify-center rounded-lg ring-1"
-              style={{ background: "var(--primary-soft)", color: "var(--primary)", borderColor: "var(--primary-soft)" }}
-            >
-              <Plane className="h-4 w-4" aria-hidden />
-            </span>
-            <span>
-              ReRoute<span style={{ color: "var(--primary)" }}>.AI</span>
-            </span>
-          </Link>
-
-          {/* Nav links */}
-          <nav className="hidden items-center gap-8 text-sm font-medium md:flex" style={{ color: "var(--muted)" }}>
-            <Link href="/#features" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
-              Features
-            </Link>
-            <Link href="/#pricing" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
-              Pricing
-            </Link>
-            <Link href="/contact" className="transition hover:opacity-100" style={{ opacity: 0.75 }}>
-              Contact Us
-            </Link>
-          </nav>
-
-          {/* CTA buttons */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <ThemeToggle className="hidden sm:inline-flex" />
-            <Link
-              href="/login"
-              className="hidden rounded-full border px-4 py-2 text-sm font-medium backdrop-blur-sm transition hover:opacity-90 sm:inline-flex"
-              style={{
-                borderColor: "var(--stroke-strong)",
-                background: "var(--surface-1)",
-                color: "var(--fg)",
-              }}
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-full px-4 py-2 text-sm font-semibold shadow-lg transition hover:opacity-90"
-              style={{
-                background: "var(--primary)",
-                color: "#fff",
-                boxShadow: "0 4px 18px color-mix(in srgb, var(--primary) 35%, transparent)",
-              }}
-            >
-              Join free
-            </Link>
-          </div>
+    <section
+      id="contact"
+      className="scroll-mt-20 border-t py-16 sm:py-24"
+      style={{ borderColor: "var(--stroke)", background: "var(--bg)" }}
+    >
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mb-14 max-w-2xl text-center mx-auto sm:mb-20">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: "var(--fg)" }}>
+            Contact Us
+          </h2>
+          <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted)" }}>
+            Feel free to reach out for any inquiries, enterprise demo, or feedback. We are here to help!
+          </p>
         </div>
-      </header>
 
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-20">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-8">
           
           {/* Form Side */}
           <div className="flex flex-col justify-center rounded-2xl border p-6 sm:p-10 shadow-sm" style={{ borderColor: "var(--stroke)", background: "var(--surface-1)" }}>
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: "var(--primary)" }}>Contact Us</h1>
-              <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--muted)" }}>
-                Feel free to reach out for any inquiries or feedback. We are here to help!
-              </p>
-            </div>
-
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div>
                 <input
@@ -182,7 +123,6 @@ export default function ContactPage() {
                 {isSubmitting ? "Sending..." : "Send Message"}
               </button>
             </form>
-
           </div>
 
           {/* Map Side */}
@@ -199,6 +139,6 @@ export default function ContactPage() {
           
         </div>
       </div>
-    </div>
+    </section>
   );
 }

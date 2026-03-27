@@ -1118,7 +1118,7 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
           className={cn(
             "grid gap-6 transition-[grid-template-columns] duration-300",
             "max-lg:grid-cols-1",
-            uiDensity === "calm" && "lg:grid-cols-1",
+            uiDensity === "calm" && "lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]",
             uiDensity === "standard" && "lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]",
             uiDensity === "ops" && "lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]",
           )}
@@ -1959,7 +1959,6 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
           <div
             className={cn(
               "flex min-w-0 flex-col gap-4 transition-[gap] duration-300 lg:min-h-0",
-              uiDensity === "calm" && "lg:mx-auto lg:w-full lg:max-w-md",
               uiDensity === "standard" && "lg:gap-3",
             )}
           >

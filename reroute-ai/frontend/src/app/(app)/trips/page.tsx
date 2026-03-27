@@ -85,7 +85,7 @@ export default function TripsPage() {
 
   if (error) {
     return (
-      <div className="mx-auto w-full max-w-6xl px-6 py-16 text-center">
+      <div className="w-full px-6 py-16 text-center">
         <p className="text-sm text-red-400">{error}</p>
         <button
           type="button"
@@ -169,31 +169,33 @@ export default function TripsPage() {
                 </Link>
                 <Link
                   href={`/trips/${t.id}/edit`}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--stroke)] px-2.5 py-1.5 text-xs font-medium text-[color:var(--muted)] transition hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)]"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[color:var(--stroke)] text-[color:var(--muted)] transition hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)]"
+                  aria-label={`Edit ${t.title ?? "trip"}`}
+                  title="Edit trip"
                 >
                   <Pencil className="h-3.5 w-3.5" aria-hidden />
-                  Edit
                 </Link>
                 <button
                   type="button"
                   disabled={duplicatingId === t.id}
                   onClick={() => void duplicateTrip(t)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--stroke)] px-2.5 py-1.5 text-xs font-medium text-[color:var(--muted)] transition hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)] disabled:opacity-50"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[color:var(--stroke)] text-[color:var(--muted)] transition hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)] disabled:opacity-50"
                   aria-label={`Duplicate ${t.title ?? "trip"}`}
+                  title="Duplicate trip"
                 >
                   {duplicatingId === t.id ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                   ) : (
                     <Copy className="h-3.5 w-3.5" aria-hidden />
                   )}
-                  Copy
                 </button>
                 <button
                   type="button"
                   disabled={deletingId === t.id}
                   onClick={() => setTripToDelete({ id: t.id, label: t.title?.trim() || "Untitled trip" })}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[color:color-mix(in_oklab,var(--danger),transparent_55%)] bg-[color:color-mix(in_oklab,var(--danger),transparent_90%)] px-2.5 py-1.5 text-xs font-medium text-[color:var(--danger)] transition hover:bg-[color:color-mix(in_oklab,var(--danger),transparent_85%)] disabled:opacity-50"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[color:color-mix(in_oklab,var(--danger),transparent_55%)] bg-[color:color-mix(in_oklab,var(--danger),transparent_90%)] text-[color:var(--danger)] transition hover:bg-[color:color-mix(in_oklab,var(--danger),transparent_85%)] disabled:opacity-50"
                   aria-label={`Delete ${t.title ?? "trip"}`}
+                  title="Delete trip"
                 >
                   {deletingId === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Trash2 className="h-3.5 w-3.5" aria-hidden />}
                 </button>

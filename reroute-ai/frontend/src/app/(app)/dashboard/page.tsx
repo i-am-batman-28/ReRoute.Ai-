@@ -63,7 +63,7 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8">
-      <section className="rounded-2xl border border-[color:var(--stroke)] bg-[linear-gradient(180deg,color-mix(in_oklab,var(--primary),white_88%)_0%,color-mix(in_oklab,var(--primary),white_95%)_100%)] p-6 sm:p-8">
+      <section className="rounded-2xl border border-[color:var(--stroke)] bg-[linear-gradient(180deg,color-mix(in_oklab,var(--primary-soft),transparent_20%)_0%,var(--surface-1)_100%)] p-6 sm:p-8">
         <h1 className="text-2xl font-semibold leading-snug tracking-tight text-[color:var(--fg)]">
           {user?.full_name?.trim()
             ? `Hi ${user.full_name.trim().split(" ")[0]}, ready for your next trip?`

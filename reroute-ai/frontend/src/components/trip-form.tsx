@@ -265,7 +265,7 @@ export function TripForm({
       <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white">{pageTitle}</h1>
       <p className="mt-1 text-sm text-zinc-500">{pageDescription}</p>
 
-      <div className="mt-8 rounded-2xl border border-[color:var(--stroke)] bg-white p-6 shadow-sm">
+      <div className="rr-card mt-8 rounded-2xl border border-[color:var(--stroke)] bg-[color:var(--surface-0)] p-6 shadow-sm">
       <form onSubmit={onSubmit} className="space-y-10" noValidate aria-describedby={error ? "trip-form-error" : undefined}>
         <section className="space-y-4">
           <h2 className={sectionTitle}>Trip</h2>

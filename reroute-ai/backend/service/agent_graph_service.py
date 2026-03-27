@@ -946,24 +946,14 @@ def _confirm_precheck(state: AgentConfirmGraphState) -> AgentConfirmGraphState:
 
 
 async def _confirm_verify_offer(state: AgentConfirmGraphState) -> AgentConfirmGraphState:
+    """Skip pre-verification — just attempt the order directly.
+    If the offer is stale, create_order will fail with 422 and the retry logic handles it.
+    This avoids the double-round-trip (verify then create) that wastes time and causes false stale detections.
+    """
     if not state.get("can_apply"):
         return {"checkpoint_events": state.get("checkpoint_events", [])}
-    if state.get("booking_mode") in ("mock", "no_offers"):
-        _append_checkpoint(state, node="confirm_verify_offer_skipped", details={"booking_mode": state.get("booking_mode")})
-        return {"stale_offer": False, "checkpoint_events": state.get("checkpoint_events", [])}
-    try:
-        from integrations.duffel_client import get_offer_latest
-        selected = str(state.get("selected_option_id") or "")
-        latest = await get_offer_latest(offer_id=selected)
-        latest_data = latest.get("data") if isinstance(latest, dict) else None
-        stale = not bool(latest_data and str(latest_data.get("id") or "") == selected)
-        _append_checkpoint(state, node="confirm_verify_offer", details={"stale_offer": stale})
-        return {"stale_offer": stale, "checkpoint_events": state.get("checkpoint_events", [])}
-    except Exception as e:
-        code = _extract_http_status(e)
-        stale = code in (404, 410, 422)
-        _append_checkpoint(state, node="confirm_verify_offer_http_error", details={"status_code": code, "stale_offer": stale})
-        return {"stale_offer": stale, "checkpoint_events": state.get("checkpoint_events", [])}
+    _append_checkpoint(state, node="confirm_verify_offer_skipped", details={"reason": "direct_order_attempt"})
+    return {"stale_offer": False, "checkpoint_events": state.get("checkpoint_events", [])}
 
 
 async def _confirm_create_order(state: AgentConfirmGraphState) -> AgentConfirmGraphState:

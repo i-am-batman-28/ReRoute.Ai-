@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import type { BookingConfirmedData, ChatMessagePublic, OptionCardData } from "@/lib/chat-types";
+import { extractAirlineCode, findAirlineByIata } from "@/lib/airlines";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -97,7 +98,14 @@ function OptionCards({
           {data.disruption_summary}
         </div>
       )}
-      {data.options.map((opt) => (
+      {data.options.map((opt) => {
+        const fnMatch = opt.summary.match(/\b([A-Z0-9]{2}\d{2,4})\b/);
+        const code = fnMatch ? extractAirlineCode(fnMatch[0]) : null;
+        const airline = code ? findAirlineByIata(code) : null;
+        const duffelCarrier = typeof (opt.legs?.[0] as Record<string, unknown>)?.carrier === "string" ? (opt.legs[0] as Record<string, unknown>).carrier as string : null;
+        const name = airline?.name ?? duffelCarrier;
+        const logoUrl = airline?.logo ?? null;
+        return (
         <div
           key={opt.option_id}
           className="rounded-xl border border-[color:var(--stroke)] bg-[color:var(--surface-0)] p-3 transition-all hover:border-[color:var(--primary)] hover:shadow-md"
@@ -105,11 +113,15 @@ function OptionCards({
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--primary-soft)] text-[10px] font-bold text-[color:var(--primary)]">
-                  {opt.index}
-                </span>
+                {logoUrl ? (
+                  <img src={logoUrl} alt={name ?? ""} className="h-5 w-5 rounded object-contain" onError={(e) => (e.currentTarget.style.display = "none")} />
+                ) : (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--primary-soft)] text-[10px] font-bold text-[color:var(--primary)]">
+                    {opt.index}
+                  </span>
+                )}
                 <span className="text-[12px] font-semibold text-[color:var(--fg)] truncate">
-                  {opt.summary.split("·")[0]?.trim() || `Option ${opt.index}`}
+                  {name ?? opt.summary.split("·")[0]?.trim() ?? `Option ${opt.index}`}
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-[color:var(--muted)] leading-relaxed line-clamp-2">
@@ -137,7 +149,8 @@ function OptionCards({
             </button>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

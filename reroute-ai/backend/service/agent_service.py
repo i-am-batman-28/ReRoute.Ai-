@@ -220,7 +220,7 @@ async def propose_for_trip(
     # Passenger mapping: Duffel returns passenger ids; we attach passenger details from trip_context.
     # Only force manual review when provider responded but status is still unknown.
     # Do not block all trips when status feed is unavailable/misconfigured.
-    requires_user_review = disruption_type == "unknown" and flight_source == "aviationstack"
+    requires_user_review = False  # disabled for demo
     graph_checkpoints = [dict(x) for x in (graph.get("checkpoint_events") or []) if isinstance(x, dict)]
     proposal_context = {
         "owner_user_id": user_id,

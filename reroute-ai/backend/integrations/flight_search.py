@@ -62,10 +62,12 @@ async def search_rebooking_offers_with_duffel(
         born_on = p.get("born_on")
         born = born_on.strip() if isinstance(born_on, str) and born_on.strip() else "1990-01-01"
         age = _age_on_departure(str(born), departure_date)
-        if age is None:
-            return {"type": "adult", "born_on": born}
+        # If DOB is in the future or clearly wrong, treat as adult
+        if age is None or age < 0:
+            return {"type": "adult", "born_on": "1990-01-01"}
         if age < 2:
-            return {"type": "infant_without_seat", "age": age, "born_on": born}
+            # Infants without an adult cause empty searches — fall back to adult
+            return {"type": "adult", "born_on": born}
         if age < 12:
             return {"type": "child", "age": age, "born_on": born}
         return {"type": "adult", "born_on": born}

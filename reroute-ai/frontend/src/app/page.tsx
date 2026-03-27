@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Plane } from "lucide-react";
+import { ChevronRight, Plane, Search } from "lucide-react";
 
 import { PricingSection } from "@/components/marketing/pricing-section";
 import { AboutSection } from "@/components/marketing/about-section";
+import { FlightTrackerCTA } from "@/components/marketing/flight-tracker";
 import { ContactSection } from "@/components/marketing/contact-section";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/cn";
@@ -144,30 +145,7 @@ export default function HomePage() {
             operators and travelers who can't afford chaos.
           </p>
 
-          <div id="sign-in" className="mt-10 flex w-full max-w-md flex-col items-center gap-4 scroll-mt-24 sm:flex-row sm:justify-center">
-            <Link
-              href="/login"
-              className="flex w-full min-h-[52px] items-center justify-center rounded-full px-8 text-sm font-semibold shadow-xl transition hover:opacity-90 sm:w-auto"
-              style={{
-                background: "var(--primary)",
-                color: "#fff",
-                boxShadow: "0 8px 28px color-mix(in srgb, var(--primary) 35%, transparent)",
-              }}
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              className="flex w-full min-h-[52px] items-center justify-center rounded-full border px-8 text-sm font-semibold backdrop-blur-md transition hover:opacity-90 sm:w-auto"
-              style={{
-                borderColor: "var(--stroke-strong)",
-                background: "var(--surface-1)",
-                color: "var(--fg)",
-              }}
-            >
-              Create account
-            </Link>
-          </div>
+          <FlightTrackerCTA />
         </div>
       </section>
 

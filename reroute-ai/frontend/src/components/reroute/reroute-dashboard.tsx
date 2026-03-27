@@ -1480,6 +1480,56 @@ export function ReRouteDashboard({ userLabel, onLogout, bridge, embedded }: ReRo
               </div>
             ) : null}
 
+            {/* Disruption Timeline — collapsible */}
+            {isApiReady && bridge && bridge.events.length > 0 && (activeStep === "run" || activeStep === "compensation") ? (
+              <div className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left transition hover:bg-zinc-800/20"
+                  onClick={() => {
+                    const el = document.getElementById("disruption-timeline-body");
+                    if (el) el.classList.toggle("hidden");
+                    const chevron = document.getElementById("disruption-timeline-chevron");
+                    if (chevron) chevron.classList.toggle("rotate-180");
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Disruption Timeline</span>
+                    <span className="rounded-full bg-zinc-700/60 px-1.5 py-0.5 text-[10px] tabular-nums text-zinc-400">{bridge.events.length}</span>
+                  </div>
+                  <ChevronDown id="disruption-timeline-chevron" className="h-4 w-4 shrink-0 text-zinc-500 transition-transform" aria-hidden />
+                </button>
+                <div id="disruption-timeline-body" className="max-h-48 overflow-y-auto border-t border-zinc-800/60 px-4 py-3">
+                  <div className="relative ml-3 border-l border-zinc-700/60 pl-5">
+                    {[...bridge.events].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10).map((ev) => {
+                      const isAlert = ev.kind === "monitor_alert" || ev.kind === "agent_propose";
+                      const isConfirm = ev.kind === "agent_confirm";
+                      const dotColor = isConfirm ? "bg-emerald-400" : isAlert ? "bg-amber-500/70" : "bg-zinc-500";
+                      const kindLabel: Record<string, string> = {
+                        monitor_scan: "Flight scanned",
+                        monitor_alert: "Disruption detected",
+                        agent_propose: "Agent found alternatives",
+                        agent_confirm: "Rebooking confirmed",
+                      };
+                      return (
+                        <div key={ev.id} className="relative mb-3 last:mb-0">
+                          <div className={`absolute -left-[23px] top-1.5 h-2 w-2 rounded-full ${dotColor}`} />
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs font-medium text-[color:var(--fg)]">{kindLabel[ev.kind] ?? ev.kind}</span>
+                            {ev.disruption_type && ev.disruption_type !== "unknown" ? (
+                              <span className="rounded bg-amber-500/8 px-1.5 py-0.5 text-[10px] font-medium text-amber-500/70">{ev.disruption_type}</span>
+                            ) : null}
+                          </div>
+                          <p className="text-[11px] text-zinc-500">{new Date(ev.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             {showSeparateRebookingCard && (activeStep === "run" || activeStep === "compensation") ? (
               <div
                 className="overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-sm shadow-black/20"

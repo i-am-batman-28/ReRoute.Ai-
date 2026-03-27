@@ -180,13 +180,15 @@ async def run_monitor_cycle(*, session: AsyncSession) -> dict[str, int]:
             dest_lat = wx.get("destination_lat")
             dest_lon = wx.get("destination_lon")
             if origin_lat is None or origin_lon is None:
-                o_lat, o_lon = await resolve_coords(iata=origin_iata, city_name=origin_city)
-                origin_lat = origin_lat if origin_lat is not None else o_lat
-                origin_lon = origin_lon if origin_lon is not None else o_lon
+                coords = await resolve_coords(origin_iata or origin_city)
+                if coords:
+                    origin_lat = origin_lat if origin_lat is not None else coords[0]
+                    origin_lon = origin_lon if origin_lon is not None else coords[1]
             if dest_lat is None or dest_lon is None:
-                d_lat, d_lon = await resolve_coords(iata=dest_iata, city_name=dest_city)
-                dest_lat = dest_lat if dest_lat is not None else d_lat
-                dest_lon = dest_lon if dest_lon is not None else d_lon
+                coords = await resolve_coords(dest_iata or dest_city)
+                if coords:
+                    dest_lat = dest_lat if dest_lat is not None else coords[0]
+                    dest_lon = dest_lon if dest_lon is not None else coords[1]
 
             weather: dict[str, Any] = {"source": "monitor_cycle", "origin_latest": {}, "destination_latest": {}}
             if origin_lat is not None and origin_lon is not None:

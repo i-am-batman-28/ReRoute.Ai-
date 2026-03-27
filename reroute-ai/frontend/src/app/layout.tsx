@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -57,15 +58,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      {/* Anti-FOUC script — runs synchronously before any paint */}
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body
         className="min-h-full flex flex-col"
         style={{ background: "var(--bg)", color: "var(--fg)", transition: "background 0.25s ease, color 0.25s ease" }}
         suppressHydrationWarning
       >
+        <Script id="reroute-theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeScript }} />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

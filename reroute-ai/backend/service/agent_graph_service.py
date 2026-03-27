@@ -594,8 +594,10 @@ def _rank_options(state: AgentGraphState) -> AgentGraphState:
 
     offers = list(state.get("offers") or [])
     booking_mode = "live"
+    is_simulate = bool(state.get("simulate_disruption"))
 
-    if not offers:
+    if not offers and not is_simulate:
+        # No real offers and not in demo mode — report clearly
         booking_mode = "no_offers"
         _append_checkpoint(state, node="rank_options", details={"booking_mode": "no_offers", "options_count": 0})
         return {
@@ -604,6 +606,24 @@ def _rank_options(state: AgentGraphState) -> AgentGraphState:
             "options": [],
             "checkpoint_events": state.get("checkpoint_events", []),
         }
+
+    if not offers and is_simulate:
+        # Demo/simulate mode with no real offers — generate mock offers for presentation
+        booking_mode = "mock"
+        origin = primary.get("origin", "JFK")
+        dest = primary.get("destination", "ATL")
+        offers = [
+            {"id": f"mock_offer_{i}", "total_amount": str(200 + i * 75), "total_currency": "USD",
+             "slices": [{"segments": [{"origin": {"iata_code": origin}, "destination": {"iata_code": dest},
+              "departing_at": f"{primary.get('date', '2026-04-01')}T{8+i*2:02d}:00:00",
+              "arriving_at": f"{primary.get('date', '2026-04-01')}T{11+i*2:02d}:30:00",
+              "operating_carrier_flight_number": f"{1000+i*111}",
+              "marketing_carrier": {"name": ["Delta", "United", "American"][i-1]},
+              "passengers": [{"cabin_class_marketing_name": "Economy"}]}]}]
+            }
+            for i in range(1, 4)
+        ]
+        logger.info("rank_options_mock_for_simulate", extra={"count": len(offers)})
 
     # Deduplicate offers by itinerary shape (origin→dest + departure time, rounded to 10min).
     # Duffel returns multiple fare classes per flight — we keep ONLY the cheapest per unique journey.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
@@ -10,6 +10,21 @@ export function FlightTrackerCTA() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setResult(null);
+        setError("");
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +67,7 @@ export function FlightTrackerCTA() {
   };
 
   return (
-    <div id="hero-cta" className="mt-10 flex w-full max-w-lg flex-col items-center gap-4 scroll-mt-24">
+    <div id="hero-cta" ref={containerRef} className="mt-10 flex w-full max-w-lg flex-col items-center gap-4 scroll-mt-24">
       <form 
         onSubmit={handleTrack}
         className="relative flex w-full items-center rounded-full p-2 shadow-xl backdrop-blur-md transition-shadow hover:shadow-2xl focus-within:ring-2 focus-within:ring-[var(--primary)]"

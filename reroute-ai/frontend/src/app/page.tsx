@@ -118,12 +118,7 @@ export default function HomePage() {
 
         {/* Hero body */}
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-4 pb-16 pt-10 sm:px-6 sm:pb-20 sm:pt-14">
-          <p
-            className="text-center text-[11px] font-semibold uppercase tracking-[0.22em]"
-            style={{ color: "var(--accent)" }}
-          >
-            Travel disruption intelligence
-          </p>
+
           <h1 className="mx-auto mt-4 max-w-4xl text-center text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl md:text-6xl" style={{ color: "var(--fg)" }}>
             ReRoute is central to{" "}
             <span

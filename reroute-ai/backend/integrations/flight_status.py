@@ -95,7 +95,7 @@ async def get_flight_status_aviationstack(
 
     params = {
         "access_key": settings.AVIATION_STACK_API_KEY,
-        "flight_number": flight_number,
+        "flight_iata": flight_number.replace(" ", "").upper(),
         "date": date,
     }
 
@@ -134,5 +134,9 @@ async def get_flight_status_aviationstack(
     if delay_minutes is not None and int(delay_minutes) >= 15:
         return {"status": "delayed", "delay_minutes": int(delay_minutes), "source": "aviationstack"}
 
-    return {"status": "unknown", "delay_minutes": None, "source": "aviationstack"}
+    # If it's not a disruption, return its actual status (active, scheduled, etc) instead of unknown
+    if status_text in ("active", "scheduled", "landed"):
+        return {"status": status_text, "delay_minutes": delay_minutes or 0, "source": "aviationstack"}
+
+    return {"status": status_text or "unknown", "delay_minutes": delay_minutes, "source": "aviationstack"}
 

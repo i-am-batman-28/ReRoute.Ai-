@@ -208,6 +208,12 @@ async def propose_for_trip(
         graph.get("compensation_draft") if isinstance(graph.get("compensation_draft"), dict) else {}
     )
     search_meta = graph.get("search_meta") if isinstance(graph.get("search_meta"), dict) else {}
+    # New LLM + enhanced fields
+    llm_disruption_narrative = graph.get("llm_disruption_narrative")
+    cascade_narrative = graph.get("cascade_narrative")
+    offers_expired_at = graph.get("offers_expired_at")
+    price_comparison = graph.get("price_comparison")
+    passenger_validation = graph.get("passenger_validation")
 
     # 7) Persist proposal context for confirm/apply
     # We store Duffel booking context (passengers ids + payments per offer).
@@ -284,12 +290,17 @@ async def propose_for_trip(
         phase=phase,
         requires_user_review=requires_user_review,
         disruption_summary=disruption_summary,
+        llm_disruption_narrative=llm_disruption_narrative,
         ranked_options=options,
         tool_trace_summary=tool_trace_summary,
         cascade_preview=cascade_preview,
+        cascade_narrative=cascade_narrative,
         compensation_draft=compensation_draft,
         notification_status=notification_status,
         search_meta=search_meta,
+        offers_expired_at=offers_expired_at,
+        price_comparison=price_comparison,
+        passenger_validation=passenger_validation,
     )
 
 

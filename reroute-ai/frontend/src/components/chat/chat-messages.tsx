@@ -274,7 +274,12 @@ function EntityEditorCard({
                     ) : (
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-medium text-[color:var(--fg)]">
-                          {p.given_name || ""} {p.family_name || ""}
+                          {[
+                            typeof p.given_name === "string" ? p.given_name : "",
+                            typeof p.family_name === "string" ? p.family_name : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ") || "—"}
                         </span>
                         <span className="text-[10px] text-[color:var(--subtle)]">
                           {typeof p.born_on === "string" && p.born_on ? p.born_on : "No DOB"} &middot; {typeof p.phone_number === "string" && p.phone_number ? p.phone_number : "No phone"}

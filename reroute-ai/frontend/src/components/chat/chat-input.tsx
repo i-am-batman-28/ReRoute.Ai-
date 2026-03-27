@@ -52,9 +52,13 @@ function useVoiceInput(onResult: (text: string) => void) {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
-    const SR = typeof window !== "undefined"
-      ? (window as unknown as { SpeechRecognition?: typeof SpeechRecognition; webkitSpeechRecognition?: typeof SpeechRecognition })
-      : null;
+    const SR =
+      typeof window !== "undefined"
+        ? (window as unknown as {
+            SpeechRecognition?: new () => SpeechRecognition;
+            webkitSpeechRecognition?: new () => SpeechRecognition;
+          })
+        : null;
     const SpeechRec = SR?.SpeechRecognition || SR?.webkitSpeechRecognition;
     if (SpeechRec) {
       setSupported(true);

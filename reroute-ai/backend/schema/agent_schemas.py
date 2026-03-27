@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -11,11 +12,11 @@ class AgentProposeRequest(BaseModel):
     trip_id: str = Field(..., description="Trip to analyze")
     simulate_disruption: str | None = Field(
         None,
-        description="Optional demo flag e.g. cancel|delay to drive mock integrations",
+        description="Optional demo flag e.g. cancel|delay|divert to drive mock integrations",
     )
     async_mode: bool = Field(
         False,
-        description="If true, enqueue Celery job and poll GET .../propose/jobs/{task_id} (requires Redis). Prefer POST .../propose/async to avoid opening a DB session.",
+        description="If true, enqueue Celery job and poll GET .../propose/jobs/{task_id} (requires Redis).",
     )
 
 
@@ -25,7 +26,7 @@ class AgentProposeAsyncRequest(BaseModel):
     trip_id: str = Field(..., description="Trip to analyze")
     simulate_disruption: str | None = Field(
         None,
-        description="Optional demo flag e.g. cancel|delay to drive mock integrations",
+        description="Optional demo flag e.g. cancel|delay|divert to drive mock integrations",
     )
 
 
@@ -35,6 +36,11 @@ class RankedOptionDTO(BaseModel):
     summary: str
     legs: list[dict[str, Any]] = Field(default_factory=list)
     modality: str = "flight"
+    llm_explanation: str | None = Field(None, description="GPT-generated explanation of why this option is good/bad")
+    price_display: str | None = Field(None, description="Formatted price e.g. 'USD 245.00'")
+    arrival_display: str | None = Field(None, description="Formatted arrival e.g. 'Mar 28, 6:15 PM'")
+    stops: int = Field(0, description="Number of stops/connections")
+    duration_minutes: int | None = Field(None, description="Total travel time in minutes")
 
 
 class AgentProposeResponse(BaseModel):
@@ -42,12 +48,17 @@ class AgentProposeResponse(BaseModel):
     phase: str
     requires_user_review: bool = False
     disruption_summary: str | None = None
+    llm_disruption_narrative: str | None = Field(None, description="GPT-generated natural language disruption explanation")
     ranked_options: list[RankedOptionDTO] = Field(default_factory=list)
     tool_trace_summary: list[str] = Field(default_factory=list)
     cascade_preview: dict[str, Any] | None = None
+    cascade_narrative: str | None = Field(None, description="GPT-generated cascade impact explanation")
     compensation_draft: dict[str, Any] | None = None
     notification_status: dict[str, Any] | None = None
     search_meta: dict[str, Any] | None = None
+    offers_expired_at: str | None = Field(None, description="ISO timestamp when Duffel offers likely expire (~30 min from search)")
+    price_comparison: dict[str, Any] | None = Field(None, description="Price delta between original and cheapest option")
+    passenger_validation: dict[str, Any] | None = Field(None, description="Validation warnings for passenger data")
 
 
 class AgentConfirmRequest(BaseModel):

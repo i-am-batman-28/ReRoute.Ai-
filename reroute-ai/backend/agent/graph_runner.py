@@ -1,29 +1,11 @@
-"""LangGraph graph build/run. Requires `pip install -e '.[agent]'`."""
+"""LangGraph graph execution — delegates to service/agent_graph_service.py.
+
+This module exists for backwards compatibility. The actual graph implementation
+lives in ``service.agent_graph_service``.
+"""
 
 from __future__ import annotations
 
-import logging
-from typing import Any
+from service.agent_graph_service import run_confirm_graph, run_propose_graph
 
-from agent.state import TripAgentState
-
-logger = logging.getLogger(__name__)
-
-
-def build_graph():
-    """Return a compiled LangGraph graph when agent extras are installed."""
-    try:
-        from langgraph.graph import StateGraph  # type: ignore[import-not-found]
-    except ImportError as e:
-        raise RuntimeError(
-            "LangGraph is not installed. Install agent extras: pip install -e '.[agent]'"
-        ) from e
-
-    _ = StateGraph  # noqa: F841 — wired when nodes (observe, tools, propose, interrupt) are added
-    raise NotImplementedError("Graph wiring: add nodes (observe, tool, propose, interrupt)")
-
-
-async def run_trip_agent(_initial: TripAgentState) -> dict[str, Any]:
-    """Execute graph for one trip run; returns final state dict."""
-    build_graph()
-    return {}
+__all__ = ["run_propose_graph", "run_confirm_graph"]

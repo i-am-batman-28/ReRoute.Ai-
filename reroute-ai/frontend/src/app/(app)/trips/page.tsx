@@ -1,25 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Copy, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { useRerouteSession } from "@/components/reroute-session-provider";
-import { useCreateDemoTrip } from "@/hooks/use-trip-workspace";
 import type { TripPublic } from "@/lib/api-types";
-import { apiCreateTrip, apiDeleteTrip, apiListTrips } from "@/lib/reroute-api";
+import { apiDeleteTrip, apiListTrips } from "@/lib/reroute-api";
 import { buildSnapshotTripSummary } from "@/lib/reroute-display";
-import { snapshotForDuplicate } from "@/lib/trip-snapshot";
 
 export default function TripsPage() {
-  const router = useRouter();
   const { user } = useRerouteSession();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trips, setTrips] = useState<TripPublic[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [tripToDelete, setTripToDelete] = useState<{ id: string; label: string } | null>(null);
 
   const load = useCallback(async () => {
@@ -39,26 +34,6 @@ export default function TripsPage() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  const { createDemoTrip, creating, error: createErr, clearError } = useCreateDemoTrip(load);
-
-  async function duplicateTrip(trip: TripPublic) {
-    if (!user) return;
-    setDuplicatingId(trip.id);
-    try {
-      const snap = snapshotForDuplicate(trip.snapshot as Record<string, unknown>);
-      const created = await apiCreateTrip({
-        title: `${trip.title?.trim() || "Trip"} (copy)`,
-        snapshot: snap,
-      });
-      await load();
-      router.push(`/trips/${created.id}`);
-    } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Could not duplicate trip.");
-    } finally {
-      setDuplicatingId(null);
-    }
-  }
 
   async function deleteTrip(id: string) {
     if (!user) return;
@@ -104,33 +79,19 @@ export default function TripsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--fg)]">Trips</h1>
           <p className="mt-1 text-sm text-[color:var(--subtle)]">
-            Create a real itinerary or open a quick demo. Run the agent from any trip.
+            Build an itinerary and run the agent from any trip.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/trips/new"
-            className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--stroke)] bg-[color:var(--surface-1)] px-4 py-2 text-sm font-semibold text-[color:var(--fg)] transition hover:bg-[color:var(--surface-2)]"
+            className="inline-flex items-center gap-2 rounded-lg bg-[color:var(--primary)] px-4 py-2 text-sm font-semibold text-[color:var(--bg)] shadow-sm transition hover:bg-[color:var(--primary-strong)]"
           >
             <Plus className="h-4 w-4" aria-hidden />
             New trip
           </Link>
-          <button
-            type="button"
-            onClick={() => {
-              clearError();
-              void createDemoTrip();
-            }}
-            disabled={creating}
-            className="inline-flex items-center gap-2 rounded-lg bg-[color:var(--primary)] px-4 py-2 text-sm font-semibold text-[color:var(--bg)] transition hover:bg-[color:var(--primary-strong)] disabled:opacity-60"
-          >
-            {creating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
-            Demo trip
-          </button>
         </div>
       </div>
-
-      {createErr ? <p className="mt-4 text-sm text-red-400">{createErr}</p> : null}
 
       {trips.length === 0 ? (
         <p className="mt-10 rounded-lg border border-dashed border-[color:var(--stroke)] bg-[color:var(--surface-0)] px-4 py-12 text-center text-sm text-[color:var(--subtle)]">
@@ -140,8 +101,8 @@ export default function TripsPage() {
             className="font-medium text-[color:var(--primary)] underline underline-offset-2 hover:text-[color:var(--primary-strong)]"
           >
             Create a trip
-          </Link>{" "}
-          or use Demo trip.
+          </Link>
+          .
         </p>
       ) : (
         <ul className="rr-card mt-8 divide-y divide-[color:var(--stroke)] overflow-hidden rounded-xl">
@@ -175,20 +136,6 @@ export default function TripsPage() {
                 >
                   <Pencil className="h-3.5 w-3.5" aria-hidden />
                 </Link>
-                <button
-                  type="button"
-                  disabled={duplicatingId === t.id}
-                  onClick={() => void duplicateTrip(t)}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[color:var(--stroke)] text-[color:var(--muted)] transition hover:bg-[color:var(--surface-1)] hover:text-[color:var(--fg)] disabled:opacity-50"
-                  aria-label={`Duplicate ${t.title ?? "trip"}`}
-                  title="Duplicate trip"
-                >
-                  {duplicatingId === t.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" aria-hidden />
-                  )}
-                </button>
                 <button
                   type="button"
                   disabled={deletingId === t.id}

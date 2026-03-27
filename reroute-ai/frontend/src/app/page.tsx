@@ -11,8 +11,8 @@ import { cn } from "@/lib/cn";
 const featureTopRight = {
   title: "Monitor every itinerary",
   body: "See pending proposals and trip health across what you're watching—without drowning in noise.",
-  href: "/monitor",
-  cta: "View monitor",
+  href: "/dashboard",
+  cta: "Open overview",
   image: "/4k-plane-in-airport-uhj5vnu4c0t0j89v.jpg",
 } as const;
 

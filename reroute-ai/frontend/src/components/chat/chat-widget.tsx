@@ -155,13 +155,24 @@ function EntityProgress({
 // ── Main Widget ──────────────────────────────────────────────
 
 export function ChatWidget() {
-  const [open, setOpen] = useState(() => readWidgetState() === "open");
-  const [minimized, setMinimized] = useState(() => readWidgetState() === "minimized");
+  // SSR + first client paint must match: never read localStorage in useState initializers.
+  const [open, setOpen] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [soundEnabled, setSoundEnabled] = useState(() => readSoundPref());
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const prevMsgCountRef = useRef(0);
+  const restoredFromStorageRef = useRef(false);
   const chat = useChat();
   const router = useRouter();
+
+  // Restore widget + sound prefs after mount (avoids hydration mismatch).
+  useEffect(() => {
+    const ws = readWidgetState();
+    setOpen(ws === "open");
+    setMinimized(ws === "minimized");
+    setSoundEnabled(readSoundPref());
+    restoredFromStorageRef.current = true;
+  }, []);
 
   // Track unread messages when widget is closed/minimized
   useEffect(() => {
@@ -178,8 +189,9 @@ export function ChatWidget() {
     prevMsgCountRef.current = newCount;
   }, [chat.messages, open, minimized, soundEnabled]);
 
-  // Persist widget state
+  // Persist widget state (skip until localStorage restore ran — avoids overwriting with "closed")
   useEffect(() => {
+    if (!restoredFromStorageRef.current) return;
     if (open && !minimized) writeWidgetState("open");
     else if (minimized) writeWidgetState("minimized");
     else writeWidgetState("closed");

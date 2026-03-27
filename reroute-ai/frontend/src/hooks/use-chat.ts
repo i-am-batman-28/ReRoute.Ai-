@@ -82,6 +82,34 @@ export function useChat() {
         const reply = await apiChatSendMessage(text, session?.id);
         _applyReply(reply);
 
+        // If agent ran and produced options, sync to workspace sessionStorage
+        // so the trip workspace auto-loads the proposal when user navigates there
+        if (reply.reply.card_type === "options" && reply.reply.card_data && reply.session.trip_id) {
+          const tripId = reply.session.trip_id;
+          const proposalData = reply.reply.card_data as Record<string, unknown>;
+          const workspaceProposal = {
+            proposal_id: proposalData.proposal_id,
+            phase: "await_confirm",
+            requires_user_review: false,
+            disruption_summary: proposalData.disruption_summary,
+            ranked_options: (proposalData.options as unknown[]) || [],
+            tool_trace_summary: [],
+            cascade_preview: proposalData.cascade_preview || null,
+            compensation_draft: proposalData.compensation_draft || null,
+            notification_status: null,
+            search_meta: null,
+          };
+          try {
+            sessionStorage.setItem(`reroute.proposal.v1:${tripId}`, JSON.stringify(workspaceProposal));
+            if (proposalData.cascade_preview) {
+              sessionStorage.setItem(`reroute.cascade.v1:${tripId}`, JSON.stringify(proposalData.cascade_preview));
+            }
+            if (proposalData.compensation_draft) {
+              sessionStorage.setItem(`reroute.compensation.v1:${tripId}`, JSON.stringify(proposalData.compensation_draft));
+            }
+          } catch { /* sessionStorage full or unavailable */ }
+        }
+
         setMessages((prev) => {
           const withoutOptimistic = prev.filter((m) => m.id !== optimisticMsg.id);
           return [

@@ -94,7 +94,6 @@ SHARED — COORDINATE (small PRs, announce in chat)
   backend/tests/conftest.py
   README.md
   backend/README.md
-  .env.example
   .gitignore
 
 

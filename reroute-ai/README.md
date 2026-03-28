@@ -1,8 +1,10 @@
-# ReRoute.AI
+# ReRoute.AI application
 
-Monorepo: **FastAPI** backend (`backend/`) + **Next.js** frontend (`frontend/`).
+This directory holds the **FastAPI** backend (`backend/`) and **Next.js** frontend (`frontend/`).
 
-## Quick start
+Project overview, environment variables, Docker services, and Celery setup are documented in the **[repository README](../README.md)** at the repo root.
+
+### Quick commands
 
 **Backend** (from `backend/`):
 
@@ -15,13 +17,9 @@ uvicorn main:app --reload --port 8000
 **Frontend** (from `frontend/`):
 
 ```bash
-npm run dev
+npm install && npm run dev
 ```
 
-API health: `GET http://localhost:8000/api/health`
+**Health:** `GET http://localhost:8000/api/health`
 
-Agent (stubs): `POST /api/agent/propose`, `POST /api/agent/confirm` — see [docs/AGENT_ARCHITECTURE.md](docs/AGENT_ARCHITECTURE.md).
-
-## Guidelines
-
-See `../reroute-coding-guidelines/` for Cursor rules and architecture docs.
+**Agent design:** [docs/AGENT_ARCHITECTURE.md](docs/AGENT_ARCHITECTURE.md)

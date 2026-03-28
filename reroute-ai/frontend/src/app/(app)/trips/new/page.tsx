@@ -79,9 +79,10 @@ export default function NewTripPage() {
       {/* Trip form — pre-filled from extraction if available */}
       <TripForm
         mode="create"
-        seed={seed}
+        seed={null}
         seedLoading={false}
         seedError={null}
+        prefill={seed}
         backHref="/trips"
         pageTitle={seed ? "Confirm extracted details" : "New trip"}
         pageDescription={

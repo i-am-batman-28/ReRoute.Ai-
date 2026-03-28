@@ -112,23 +112,99 @@ async def extract_from_image_bytes(image_bytes: bytes, content_type: str = "imag
 
 
 async def extract_from_pdf_bytes(pdf_bytes: bytes) -> dict[str, Any]:
-    """Convert first page of PDF to image, then extract."""
+    """Extract from PDF — try text extraction first, fall back to image."""
     try:
         import fitz  # PyMuPDF
 
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
         page = doc.load_page(0)
+
+        # Try text extraction first — works for text-based PDFs
+        text_content = page.get_text("text").strip()
+        if len(text_content) > 50:
+            doc.close()
+            logger.info("pdf_text_extraction", extra={"chars": len(text_content)})
+            return await extract_from_text(text_content)
+
+        # Fall back to image extraction for scanned/image PDFs
         pix = page.get_pixmap(dpi=200)
         img_bytes = pix.tobytes("png")
         doc.close()
         return await extract_from_image_bytes(img_bytes, "image/png")
     except ImportError:
-        # PyMuPDF not installed — try sending PDF as-is to GPT-4o (it can handle some)
         logger.warning("pymupdf_not_installed_trying_direct")
         return await extract_from_image_bytes(pdf_bytes, "image/png")
     except Exception as e:
         logger.exception("pdf_conversion_failed")
         return {"ok": False, "error": f"PDF processing failed: {str(e)[:200]}"}
+
+
+async def extract_from_text(text: str) -> dict[str, Any]:
+    """Send extracted text to GPT-4o-mini for structured extraction."""
+    settings = get_settings()
+    if not settings.OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY not configured")
+
+    try:
+        from langchain_openai import ChatOpenAI
+        from langchain_core.messages import HumanMessage, SystemMessage
+
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=0,
+            api_key=settings.OPENAI_API_KEY,
+            max_tokens=500,
+        )
+
+        prompt = f"""Extract flight details from this boarding pass / ticket text.
+
+Return a JSON object with these fields (include only what you find):
+{{
+  "flight_number": "AA104",
+  "airline": "American Airlines",
+  "origin": "JFK",
+  "destination": "BOM",
+  "travel_date": "2026-03-31",
+  "departure_time": "22:30",
+  "arrival_time": "23:15",
+  "cabin_class": "economy",
+  "booking_reference": "RRT2026",
+  "seat": "24A",
+  "passenger_name": "Karthik Sarma",
+  "passenger_title": "mr",
+  "gate": "B42",
+  "terminal": "4"
+}}
+
+Use IATA codes for airports. YYYY-MM-DD for dates. HH:MM 24hr for times.
+Return ONLY the JSON object.
+
+TICKET TEXT:
+{text}"""
+
+        response = await llm.ainvoke([
+            SystemMessage(content="You extract structured flight data from ticket text. Return only valid JSON."),
+            HumanMessage(content=prompt),
+        ])
+        raw = response.content if hasattr(response, "content") else str(response)
+
+        import json
+        text_clean = raw.strip()
+        if text_clean.startswith("```"):
+            text_clean = text_clean.split("\n", 1)[1] if "\n" in text_clean else text_clean[3:]
+            if text_clean.endswith("```"):
+                text_clean = text_clean[:-3]
+            text_clean = text_clean.strip()
+            if text_clean.startswith("json"):
+                text_clean = text_clean[4:].strip()
+
+        extracted = json.loads(text_clean)
+        logger.info("text_extraction_success", extra={"fields": list(extracted.keys())})
+        return {"ok": True, "extracted": extracted}
+
+    except Exception as e:
+        logger.exception("text_extraction_failed")
+        return {"ok": False, "error": str(e)[:200]}
 
 
 def extracted_to_trip_entities(extracted: dict[str, Any]) -> dict[str, Any]:

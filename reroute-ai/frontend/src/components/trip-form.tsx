@@ -57,6 +57,8 @@ export type TripFormProps = {
   pageTitle: string;
   pageDescription: string;
   submitLabel: string;
+  /** Pre-fill form fields (e.g. from ticket extraction) */
+  prefill?: Partial<TripFormInitialState> | null;
 };
 
 export function TripForm({
@@ -68,6 +70,7 @@ export function TripForm({
   pageTitle,
   pageDescription,
   submitLabel,
+  prefill,
 }: TripFormProps) {
   const router = useRouter();
   const { user, loading, error: sessionError } = useRerouteSession();
@@ -84,6 +87,17 @@ export function TripForm({
       title: seed.title?.trim() ?? "",
     });
   }, [mode, seed]);
+
+  // Pre-fill from ticket extraction or other sources
+  useEffect(() => {
+    if (!prefill) return;
+    setForm((prev) => ({
+      ...prev,
+      ...Object.fromEntries(
+        Object.entries(prefill).filter(([, v]) => v !== undefined && v !== null && v !== "")
+      ),
+    }));
+  }, [prefill]);
 
   function setPassenger(i: number, patch: Partial<PassengerRowInput>) {
     setForm((f) => ({

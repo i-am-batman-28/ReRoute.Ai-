@@ -5,3 +5,18 @@ Signals.SaarthiAi/
 workbench/
 coding-guidelines/
 reroute.db
+
+# Editor / local tooling
+.vscode/
+.idea/
+
+# API collections & one-off demos (keep local only)
+*.postman_collection.json
+demo_boarding_pass.txt
+demo_video_script.txt
+video_presentation_script.txt
+run_autonomous_demo.sh
+final_ppt_submission.txt
+
+# Embedded guidelines copy (use separate repo or submodule if needed)
+reroute-coding-guidelines/

@@ -2,6 +2,10 @@
 .env.local
 backend/.venv/
 backend/reroute.db
+backend/reroute.db-shm
+backend/reroute.db-wal
+backend/celerybeat-schedule
+backend/celerybeat-schedule.*
 backend/**/__pycache__/
 *.pyc
 .pytest_cache/

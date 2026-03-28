@@ -97,7 +97,7 @@ class Settings(BaseSettings):
     duffel_strict_booking: bool = True
 
     RESEND_API_KEY: str | None = None
-    RESEND_FROM_EMAIL: str = "noreply@reroute.ai"
+    RESEND_FROM_EMAIL: str = "ReRoute.AI <onboarding@resend.dev>"
     EMAIL_ENABLED: bool = True
     # When True, agent propose/confirm enqueue Resend sends to Celery (worker must run).
     email_via_celery: bool = False

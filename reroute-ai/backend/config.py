@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     cors_origins: str = "http://localhost:3000"
 
-    # Postgres: postgresql+asyncpg://user:pass@host:5433/dbname (see `.env.example` + docker-compose).
+    # Postgres: postgresql+asyncpg://user:pass@host:5433/dbname (see docker-compose).
     database_url: str = "sqlite+aiosqlite:///./reroute.db"
     debug_sql: bool = False
 
